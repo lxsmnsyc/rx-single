@@ -1,6 +1,9 @@
 import { disposed, toCallable } from '../utils';
 import Single from '../../single';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   observer.onSubscribe(disposed);
 
@@ -17,7 +20,9 @@ function subscribeActual(observer) {
   }
   observer.onError(err);
 }
-
+/**
+ * @ignore
+ */
 const error = (value) => {
   let report = value;
   if (typeof value === 'undefined') {
