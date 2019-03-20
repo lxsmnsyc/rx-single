@@ -26,7 +26,8 @@
  * @copyright Alexis Munsayac 2019
  */
 import {
-  create, contains, just, error, defer, delay, never, map,
+  create, contains, just, error, defer, delay,
+  never, map, fromPromise, fromResolvable, fromCallable,
 } from './internal/operators';
 
 /**
@@ -165,6 +166,7 @@ export default class Single {
    * Delays the emission of the success signal from the current Single by the specified amount.
    * @param {Number} amount
    * @param {?Boolean} doDelayError
+   * @returns {Single}
    */
   delay(amount, doDelayError) {
     return delay(this, amount, doDelayError);
@@ -180,5 +182,42 @@ export default class Single {
    */
   map(mapper) {
     return map(this, mapper);
+  }
+
+  /**
+   * Converts a Promise-like instance into a Single.
+   * @param {Promise|Thennable|PromiseLike} promise
+   * @returns {Single}
+   */
+  static fromPromise(promise) {
+    return fromPromise(promise);
+  }
+
+  /**
+   * Provides a Promise-like interface for emitting success values.
+   * @param {!Function} fulfillable
+   * @returns {Single}
+   */
+  static fromResolvable(fulfillable) {
+    return fromResolvable(fulfillable);
+  }
+
+  /**
+   * Returns a Single that invokes passed function and emits its result
+   * for each new SingleObserver that subscribes.
+   *
+   * Allows you to defer execution of passed function until Observer subscribes
+   * to the Single. It makes passed function "lazy".
+   *
+   * Result of the function invocation will be emitted by the Single.
+   *
+   * If the result is a Promise-like instance, the Observer is then
+   * subscribed to the Promise through the fromPromise operator.
+   *
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  static fromCallable(callable) {
+    return fromCallable(callable);
   }
 }
