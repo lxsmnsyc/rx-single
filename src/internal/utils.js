@@ -13,6 +13,11 @@ export const disposed = {
   dispose: () => {},
   isDisposed: () => true,
 };
+
+export const neverDisposed = {
+  dispose: () => {},
+  isDisposed: () => false,
+};
 /**
  * @ignore
  */
