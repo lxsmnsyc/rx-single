@@ -26,7 +26,7 @@
  * @copyright Alexis Munsayac 2019
  */
 import {
-  create, contains, just, error,
+  create, contains, just, error, defer, delay,
 } from './internal/operators';
 
 /**
@@ -52,6 +52,9 @@ export default class Single {
 
   /**
    * Creates a Single with an error.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
+   *
    * @param {!(Function|any)} err
    * @returns {Single}
    */
@@ -61,11 +64,25 @@ export default class Single {
 
   /**
    * Creates a Single with a success value.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.just.png" class="diagram">
+   *
    * @param {!any} value
    * @returns {Single}
    */
   static just(value) {
     return just(value);
+  }
+
+  /**
+   * Calls a Callable for each individual Observer
+   * to return the actual Single to be subscribed to.
+   *
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  static defer(callable) {
+    return defer(callable);
   }
 
   /**
@@ -134,5 +151,14 @@ export default class Single {
    */
   contains(value, comparer) {
     return contains(this, value, comparer);
+  }
+
+  /**
+   * Delays the emission of the success signal from the current Single by the specified amount.
+   * @param {Number} amount
+   * @param {?Boolean} doDelayError
+   */
+  delay(amount, doDelayError) {
+    return delay(this, amount, doDelayError);
   }
 }
