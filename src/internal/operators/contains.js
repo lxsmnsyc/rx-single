@@ -15,6 +15,7 @@ function subscribeActual(observer) {
         result = comparer(x, value);
       } catch (e) {
         onError(e);
+        return;
       }
       onSuccess(result);
     },
