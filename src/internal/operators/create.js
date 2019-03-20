@@ -1,6 +1,8 @@
 import { DISPOSED, isDisposable } from '../utils';
 import Single from '../../single';
-
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   let disposable;
   const emitter = {
@@ -64,7 +66,9 @@ function subscribeActual(observer) {
     emitter.onError(ex);
   }
 }
-
+/**
+ * @ignore
+ */
 const create = (subscriber) => {
   const single = new Single();
   single.subscriber = subscriber;
