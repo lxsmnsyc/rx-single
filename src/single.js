@@ -26,7 +26,7 @@
  * @copyright Alexis Munsayac 2019
  */
 import {
-  create, contains, just, error, defer, delay,
+  create, contains, just, error, defer, delay, never, map,
 } from './internal/operators';
 
 /**
@@ -72,6 +72,14 @@ export default class Single {
    */
   static just(value) {
     return just(value);
+  }
+
+  /**
+   * Creates a Single that doesn't succeed or error.
+   * @returns {Single}
+   */
+  static never() {
+    return never();
   }
 
   /**
@@ -160,5 +168,17 @@ export default class Single {
    */
   delay(amount, doDelayError) {
     return delay(this, amount, doDelayError);
+  }
+
+  /**
+   * Returns a Single that applies a specified function
+   * to the item emitted by the source Single and emits
+   * the result of this function application.
+   *
+   * @param {Function} mapper
+   * @returns {Single}
+   */
+  map(mapper) {
+    return map(this, mapper);
   }
 }
