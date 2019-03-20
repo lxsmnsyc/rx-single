@@ -113,12 +113,53 @@ describe('Single', () => {
    *
    */
   describe('#delay', () => {
-
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').delay(100);
+      assert(single instanceof Single);
+    });
     it('should', (done) => {
       const single = Single.just('Hello').delay(100);
       single.subscribe(
         () => done(),
         () => done(),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#never', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.never();
+      assert(single instanceof Single);
+    });
+  });
+  /**
+   *
+   */
+  describe('#map', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').map(x => `${x} World`);
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should succeed with the given value.', (done) => {
+      const single = Single.just('Hello').map(x => `${x} World`);
+
+      single.subscribe(
+        x => (x === 'Hello World' ? done() : done(false)),
+        e => done(e),
       );
     });
   });
