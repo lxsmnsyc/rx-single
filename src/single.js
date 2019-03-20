@@ -54,6 +54,7 @@ export default class Single {
   /**
    * Creates a Single with an error.
    *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.png" class="diagram">
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
    *
    * @param {!(Function|any)} err
@@ -77,6 +78,9 @@ export default class Single {
 
   /**
    * Creates a Single that doesn't succeed or error.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.never.png" class="diagram">
+   *
    * @returns {Single}
    */
   static never() {
@@ -86,6 +90,8 @@ export default class Single {
   /**
    * Calls a Callable for each individual Observer
    * to return the actual Single to be subscribed to.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.defer.png" class="diagram">
    *
    * @param {!Function} callable
    * @returns {Single}
@@ -143,6 +149,9 @@ export default class Single {
 
   /**
    * Converts the Single to a Promise instance.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.toMaybe.png" class="diagram">
+   *
    * @returns {Promise}
    */
   toPromise() {
@@ -164,6 +173,9 @@ export default class Single {
 
   /**
    * Delays the emission of the success signal from the current Single by the specified amount.
+   * 
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.delay.png" class="diagram">
+   * 
    * @param {Number} amount
    * @param {?Boolean} doDelayError
    * @returns {Single}
@@ -176,6 +188,8 @@ export default class Single {
    * Returns a Single that applies a specified function
    * to the item emitted by the source Single and emits
    * the result of this function application.
+   * 
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.map.png" class="diagram">
    *
    * @param {Function} mapper
    * @returns {Single}
@@ -213,6 +227,8 @@ export default class Single {
    *
    * If the result is a Promise-like instance, the Observer is then
    * subscribed to the Promise through the fromPromise operator.
+   * 
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.fromCallable.png" class="diagram">
    *
    * @param {!Function} callable
    * @returns {Single}
