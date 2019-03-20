@@ -1,5 +1,8 @@
 import Single from '../../single';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
@@ -15,7 +18,9 @@ function subscribeActual(observer) {
     },
   });
 }
-
+/**
+ * @ignore
+ */
 const delay = (source, amount, doDelayError) => {
   if (typeof amount !== 'number') {
     return source;
