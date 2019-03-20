@@ -1,7 +1,13 @@
 import Single from '../../single';
 
+/**
+ * @ignore
+ */
 const defaultMapper = x => x;
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
@@ -22,7 +28,9 @@ function subscribeActual(observer) {
     onError,
   });
 }
-
+/**
+ * @ignore
+ */
 const map = (source, mapper) => {
   let ms = mapper;
   if (typeof mapper !== 'function') {
