@@ -80,6 +80,30 @@ describe('Single', () => {
   /**
    *
    */
+  describe('#defer', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.defer(() => Single.just('Hello World'));
+
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should succeed with the given value.', (done) => {
+      const single = Single.defer(() => Single.just('Hello World'));
+
+      single.subscribe(
+        x => (x === 'Hello World' ? done() : done(false)),
+        e => done(e),
+      );
+    });
+  });
+  /**
+   *
+   */
   describe('#contains', () => {
     /**
      *
@@ -156,6 +180,52 @@ describe('Single', () => {
      */
     it('should succeed with the given value.', (done) => {
       const single = Single.just('Hello').map(x => `${x} World`);
+
+      single.subscribe(
+        x => (x === 'Hello World' ? done() : done(false)),
+        e => done(e),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#fromPromise', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.fromPromise(new Promise(res => res('Hello World')));
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should succeed with the given value.', (done) => {
+      const single = Single.fromPromise(new Promise(res => res('Hello World')));
+
+      single.subscribe(
+        x => (x === 'Hello World' ? done() : done(false)),
+        e => done(e),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#fromResolvable', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.fromResolvable(res => res('Hello World'));
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should succeed with the given value.', (done) => {
+      const single = Single.fromResolvable(res => res('Hello World'));
 
       single.subscribe(
         x => (x === 'Hello World' ? done() : done(false)),
