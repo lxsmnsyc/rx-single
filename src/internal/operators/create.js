@@ -1,47 +1,19 @@
-import { DISPOSED, isDisposable } from '../utils';
+import {
+  DISPOSED, isDisposable, onErrorHandler, onSuccessHandler,
+} from '../utils';
 import Single from '../../single';
+import { error } from '../operators';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
+  const { onSuccess, onError, onSubscribe } = observer;
+
   let disposable;
   const emitter = {
-    onSuccess(value) {
-      if (disposable === DISPOSED) {
-        return;
-      }
-      const d = disposable;
-      disposable = DISPOSED;
-
-      try {
-        if (typeof value === 'undefined') {
-          observer.onError('onSuccess called with undefined.');
-        } else {
-          observer.onSuccess(value);
-        }
-      } finally {
-        if (isDisposable(d)) {
-          d.dispose();
-        }
-      }
-    },
-    onError(err) {
-      let report = err;
-      if (typeof err === 'undefined') {
-        report = 'onError called with undefined value.';
-      }
-      if (disposable === DISPOSED) {
-        return;
-      }
-
-      const d = disposable;
-      disposable = DISPOSED;
-      try {
-        observer.onError(report);
-      } finally {
-        if (isDisposable(d)) {
-          d.dispose();
-        }
-      }
-    },
+    onSuccess: onSuccessHandler.bind(this),
+    onError: onErrorHandler.bind(this),
     setDisposable(d) {
       if (isDisposable(d)) {
         disposable = d;
@@ -57,15 +29,25 @@ function subscribeActual(observer) {
       return disposable === DISPOSED;
     },
   };
-  observer.onSubscribe(emitter);
+
+  this.disposable = emitter;
+  this.onSuccess = onSuccess;
+  this.onError = onError;
+
+  onSubscribe(emitter);
   try {
     this.subscriber(emitter);
   } catch (ex) {
     emitter.onError(ex);
   }
 }
-
+/**
+ * @ignore
+ */
 const create = (subscriber) => {
+  if (typeof subscriber !== 'function') {
+    return error('Single.create: There are no subscribers.');
+  }
   const single = new Single();
   single.subscriber = subscriber;
   single.subscribeActual = subscribeActual.bind(single);
