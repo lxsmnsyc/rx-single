@@ -1,7 +1,12 @@
 import Single from '../../single';
 import { disposed } from '../utils';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
+  const { onSuccess, onError, onSubscribe } = observer;
+
   let result;
 
   let err;
@@ -15,13 +20,19 @@ function subscribeActual(observer) {
   }
 
   if (typeof err !== 'undefined') {
-    observer.onSubscribe(disposed);
-    observer.onError(err);
+    onSubscribe(disposed);
+    onError(err);
   } else {
-    result.subscribe(observer);
+    result.subscribeWith({
+      onSubscribe,
+      onSuccess,
+      onError,
+    });
   }
 }
-
+/**
+ * @ignore
+ */
 const defer = (supplier) => {
   const single = new Single();
   single.supplier = supplier;
