@@ -8,6 +8,7 @@
   height: auto;
   max-width: 640px;
   max-height: 454px;
+  background: #fff;
 }
 
 :root{
@@ -66,7 +67,7 @@
   --main-code-color: #c792ea;
   --main-code-border-color: #2d3038;
 
-  --pretty-code-error-background: #011627;
+  --pretty-code-error-background: #7e57c2;
   --pretty-code-error-color: #011627;
 
   --kind-background: #011627;
