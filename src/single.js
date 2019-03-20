@@ -173,9 +173,9 @@ export default class Single {
 
   /**
    * Delays the emission of the success signal from the current Single by the specified amount.
-   * 
+   *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.delay.png" class="diagram">
-   * 
+   *
    * @param {Number} amount
    * @param {?Boolean} doDelayError
    * @returns {Single}
@@ -188,7 +188,7 @@ export default class Single {
    * Returns a Single that applies a specified function
    * to the item emitted by the source Single and emits
    * the result of this function application.
-   * 
+   *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.map.png" class="diagram">
    *
    * @param {Function} mapper
@@ -227,7 +227,7 @@ export default class Single {
    *
    * If the result is a Promise-like instance, the Observer is then
    * subscribed to the Promise through the fromPromise operator.
-   * 
+   *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.fromCallable.png" class="diagram">
    *
    * @param {!Function} callable
