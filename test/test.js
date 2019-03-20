@@ -1,21 +1,38 @@
 /* eslint-disable no-undef */
 import assert from 'assert';
 import Single from '../src/single';
-
+/**
+ *
+ */
 describe('Single', () => {
+  /**
+   *
+   */
   describe('#create', () => {
+    /**
+     *
+     */
     it('should create a Single', () => {
       const single = Single.create(e => e.onSuccess('Hello World'));
 
       assert(single instanceof Single);
     });
   });
+  /**
+   *
+   */
   describe('#error', () => {
+    /**
+     *
+     */
     it('should create a Single', () => {
       const single = Single.error('Hello World');
 
       assert(single instanceof Single);
     });
+    /**
+     *
+     */
     it('should succeed with the given value.', (done) => {
       const single = Single.error('Hello World');
 
@@ -25,12 +42,21 @@ describe('Single', () => {
       );
     });
   });
+  /**
+   *
+   */
   describe('#just', () => {
+    /**
+     *
+     */
     it('should create a Single', () => {
       const single = Single.just('Hello World');
 
       assert(single instanceof Single);
     });
+    /**
+     *
+     */
     it('should succeed with the given value.', (done) => {
       const single = Single.just('Hello World');
 
@@ -39,6 +65,9 @@ describe('Single', () => {
         e => done(e),
       );
     });
+    /**
+     *
+     */
     it('should emit error if value is undefined.', (done) => {
       const single = Single.just();
 
@@ -48,11 +77,20 @@ describe('Single', () => {
       );
     });
   });
+  /**
+   *
+   */
   describe('#contains', () => {
+    /**
+     *
+     */
     it('should create a Single', () => {
       const single = Single.just('Hello World').contains('Hello World');
       assert(single instanceof Single);
     });
+    /**
+     *
+     */
     it('should return true if the success value and the compared value are both equal.', (done) => {
       const single = Single.just('Hello World').contains('Hello World');
       single.subscribe(
@@ -60,11 +98,27 @@ describe('Single', () => {
         e => done(e),
       );
     });
+    /**
+     *
+     */
     it('should return false if the success value and the compared value are both equal.', (done) => {
       const single = Single.just('Hello').contains('Hello World');
       single.subscribe(
         x => (x ? done(false) : done()),
         e => done(e),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#delay', () => {
+
+    it('should', (done) => {
+      const single = Single.just('Hello').delay(100);
+      single.subscribe(
+        () => done(),
+        () => done(),
       );
     });
   });
