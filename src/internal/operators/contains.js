@@ -1,7 +1,13 @@
 import Single from '../../single';
 
+/**
+ * @ignore
+ */
 const containsComparer = (x, y) => x === y;
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
@@ -22,7 +28,9 @@ function subscribeActual(observer) {
     onError,
   });
 }
-
+/**
+ * @ignore
+ */
 const contains = (source, value, comparer) => {
   if (typeof value === 'undefined') {
     return source;
