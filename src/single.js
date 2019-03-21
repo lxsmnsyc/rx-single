@@ -174,7 +174,7 @@ export default class Single {
   /**
    * Delays the emission of the success signal from the current Single by the specified amount.
    *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.delay.png" class="diagram">
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.delay.e.png" class="diagram">
    *
    * @param {Number} amount
    * @param {?Boolean} doDelayError
