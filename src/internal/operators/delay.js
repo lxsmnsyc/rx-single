@@ -7,9 +7,13 @@ import { SimpleDisposable } from '../utils';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
+  let parent;
   let timeout;
 
   const disposable = new SimpleDisposable(() => {
+    if (typeof parent !== 'undefined') {
+      parent.dispose();
+    }
     if (typeof timeout !== 'undefined') {
       clearTimeout(timeout);
     }
@@ -19,10 +23,7 @@ function subscribeActual(observer) {
 
   this.source.subscribeWith({
     onSubscribe(d) {
-      const { setDisposable } = d;
-      if (typeof setDisposable === 'function') {
-        setDisposable(disposable);
-      }
+      parent = d;
       onSubscribe(disposable);
     },
     onSuccess(x) {
