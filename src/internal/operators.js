@@ -19,5 +19,6 @@ export { default as fromPromise } from './operators/fromPromise';
 export { default as fromResolvable } from './operators/fromResolvable';
 export { default as just } from './operators/just';
 export { default as map } from './operators/map';
+export { default as onErrorResumeNext } from './operators/onErrorResumeNext';
 export { default as never } from './operators/never';
 export { default as timer } from './operators/timer';
