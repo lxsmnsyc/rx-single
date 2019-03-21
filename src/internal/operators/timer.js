@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { DISPOSED } from '../utils';
+import { SimpleDisposable } from '../utils';
 import { error } from '../operators';
 
 /**
@@ -8,21 +8,13 @@ import { error } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onSubscribe } = observer;
 
-  let state;
   let timeout;
 
-  const disposable = {
-    dispose() {
-      if (typeof timeout !== 'undefined') {
-        clearTimeout(timeout);
-      }
-      state = DISPOSED;
-    },
-
-    isDisposed() {
-      return state === DISPOSED;
-    },
-  };
+  const disposable = new SimpleDisposable(() => {
+    if (typeof timeout !== 'undefined') {
+      clearTimeout(timeout);
+    }
+  });
 
   onSubscribe(disposable);
 
