@@ -861,6 +861,88 @@ describe('Single', () => {
   /**
    *
    */
+  describe('#onErrorReturn', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.error('Hello').onErrorReturn(() => 'World');
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if parameter passed is not a Single or a function', () => {
+      const source = Single.error('Hello');
+      const single = source.onErrorReturn();
+      assert(single === source);
+    });
+    /**
+     *
+     */
+    it('should emit the supplied item by the given function in case of error', (done) => {
+      const single = Single.error('Hello').onErrorReturn(() => 'World');
+
+      single.subscribe(
+        x => (x === 'World' ? done() : done(false)),
+        done,
+      );
+    });
+    /**
+     *
+     */
+    it('should emit error if provide function throws error.', (done) => {
+      const single = Single.error('Hello').onErrorReturn(() => { throw new Error('Ooops'); });
+      single.subscribe(
+        done,
+        () => done(),
+      );
+    });
+    /**
+     *
+     */
+    it('should emit error if provide function returns undefined.', (done) => {
+      const single = Single.error('Hello').onErrorReturn(() => {});
+      single.subscribe(
+        done,
+        () => done(),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#onErrorReturnItem', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.error('Hello').onErrorReturnItem('World');
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if parameter passed is not a Single or a function', () => {
+      const source = Single.error('Hello');
+      const single = source.onErrorReturnItem();
+      assert(single === source);
+    });
+    /**
+     *
+     */
+    it('should emit the given item in case of error', (done) => {
+      const single = Single.error('Hello').onErrorReturnItem('World');
+
+      single.subscribe(
+        x => (x === 'World' ? done() : done(false)),
+        done,
+      );
+    });
+  });
+  /**
+   *
+   */
   describe('#never', () => {
     /**
      *
