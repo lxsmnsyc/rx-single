@@ -59,13 +59,15 @@ describe('Single', () => {
         setTimeout(e.onSuccess, 100, true);
         e.setDisposable(new SimpleDisposable());
         e.dispose();
-        e.isDisposed();
       });
 
-      single.subscribe(
+      const disposable = single.subscribe(
         () => done(false),
         () => done(false),
       );
+      if (disposable.isDisposed()) {
+        done();
+      }
     });
     /**
      *
@@ -204,7 +206,27 @@ describe('Single', () => {
     /**
      *
      */
-    it('should not signal success if disposed.', () => {
+    it('should signal success with the given value.', (done) => {
+      const single = Single.just('Hello').delay(100);
+      single.subscribe(
+        x => (x === 'Hello' ? done() : done(false)),
+        x => done(x),
+      );
+    });
+    /**
+     *
+     */
+    it('should signal error with the given value.', (done) => {
+      const single = Single.error('Hello').delay(100);
+      single.subscribe(
+        x => done(x),
+        x => (x === 'Hello' ? done() : done(false)),
+      );
+    });
+    /**
+     *
+     */
+    it('should not signal success if disposed.', (done) => {
       const source = Single.just('Hello').delay(100);
       const disposable = source.subscribe(
         () => done(false),
@@ -212,12 +234,14 @@ describe('Single', () => {
       );
 
       disposable.dispose();
-      assert(disposable.isDisposed());
+      if (disposable.isDisposed()) {
+        done();
+      }
     });
     /**
      *
      */
-    it('should not signal error if disposed.', () => {
+    it('should not signal error if disposed.', (done) => {
       const source = Single.error('Hello').delay(100);
       const disposable = source.subscribe(
         () => done(false),
@@ -225,7 +249,9 @@ describe('Single', () => {
       );
 
       disposable.dispose();
-      assert(disposable.isDisposed());
+      if (disposable.isDisposed()) {
+        done();
+      }
     });
   });
   /**
@@ -302,6 +328,64 @@ describe('Single', () => {
         () => done(false),
         () => { called = true; },
       );
+    });
+  });
+  /**
+   *
+   */
+  describe('#doFinally', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doFinally(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if the method received a non-function parameter.', () => {
+      const source = Single.just('Hello');
+      const single = source.doFinally();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should call the given function after success.', (done) => {
+      let called;
+      const source = Single.just('Hello');
+      const single = source.doFinally(() => called && done());
+      single.subscribe(
+        () => { called = true; },
+        () => done(false),
+      );
+    });
+    /**
+     *
+     */
+    it('should call the given function after error.', (done) => {
+      let called;
+      const source = Single.error('Hello');
+      const single = source.doFinally(() => called && done());
+      single.subscribe(
+        () => done(false),
+        () => { called = true; },
+      );
+    });
+    /**
+     *
+     */
+    it('should call the given function after error.', (done) => {
+      const source = Single.never();
+      const single = source.doFinally(() => done());
+
+      const disposable = single.subscribe(
+        () => done(false),
+        () => done(false),
+      );
+
+      disposable.dispose();
     });
   });
   /**
@@ -629,15 +713,18 @@ describe('Single', () => {
     /**
      *
      */
-    it('should not signal success if disposed.', () => {
+    it('should not signal success if disposed.', (done) => {
       const single = Single.timer(100);
       const disposable = single.subscribe(
         () => done(false),
         () => done(false),
       );
 
+
       disposable.dispose();
-      assert(disposable.isDisposed());
+      if (disposable.isDisposed()) {
+        done();
+      }
     });
   });
   /**
