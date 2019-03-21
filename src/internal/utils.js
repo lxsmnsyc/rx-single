@@ -5,7 +5,7 @@ export const DISPOSED = Symbol('DISPOSED');
 /**
  * @ignore
  */
-export const isDisposable = obj => typeof obj === 'object' && (typeof obj.dispose === 'function' || typeof obj.isDisposed === 'function');
+export const isDisposable = obj => typeof obj === 'object' && (typeof obj.dispose === 'function' && typeof obj.isDisposed === 'function');
 /**
  * @ignore
  */
@@ -72,7 +72,9 @@ export function onErrorHandler(err) {
     }
   }
 }
-
+/**
+ * @ignore
+ */
 export class SimpleDisposable {
   constructor() {
     this.state = false;
