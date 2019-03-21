@@ -377,15 +377,47 @@ describe('Single', () => {
     /**
      *
      */
-    it('should call the given function after error.', (done) => {
-      const source = Single.never();
+    it('should call the given function on dispose.', (done) => {
+      const source = Single.timer(100);
       const single = source.doFinally(() => done());
 
       const disposable = single.subscribe(
         () => done(false),
         () => done(false),
       );
+      disposable.dispose();
+    });
+  });
+  /**
+   *
+   */
+  describe('#doOnDispose', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doOnDispose(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if the method received a non-function parameter.', () => {
+      const source = Single.just('Hello');
+      const single = source.doOnDispose();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should call the given function on dispose.', (done) => {
+      const source = Single.just('Hello');
+      const single = source.doOnDispose(() => done());
 
+      const disposable = single.subscribe(
+        () => done(false),
+        () => done(false),
+      );
       disposable.dispose();
     });
   });
