@@ -32,12 +32,9 @@ export const isPromise = obj => (obj instanceof Promise) || (!!obj && (typeof ob
  * @ignore
  */
 export function onSuccessHandler(value) {
-  if (this.state === DISPOSED) {
+  if (this.disposable.isDisposed()) {
     return;
   }
-  const d = this.state;
-  this.state = DISPOSED;
-
   try {
     if (typeof value === 'undefined') {
       this.onError('onSuccess called with undefined.');
@@ -45,9 +42,7 @@ export function onSuccessHandler(value) {
       this.onSuccess(value);
     }
   } finally {
-    if (isDisposable(d)) {
-      d.dispose();
-    }
+    this.disposable.dispose();
   }
 }
 /**
@@ -58,33 +53,49 @@ export function onErrorHandler(err) {
   if (typeof err === 'undefined') {
     report = 'onError called with undefined value.';
   }
-  if (this.state === DISPOSED) {
+  if (this.disposable.isDisposed()) {
     return;
   }
 
-  const d = this.state;
-  this.state = DISPOSED;
   try {
     this.onError(report);
   } finally {
-    if (isDisposable(d)) {
-      d.dispose();
-    }
+    this.disposable.dispose();
   }
 }
 /**
  * @ignore
  */
 export class SimpleDisposable {
-  constructor() {
+  constructor(onDispose) {
     this.state = false;
+    this.onDispose = onDispose;
+  }
+
+  setDisposable(disposable) {
+    if (isDisposable(disposable)) {
+      if (this.state === DISPOSED) {
+        disposable.dispose();
+      } else {
+        this.state = disposable;
+      }
+    }
   }
 
   dispose() {
+    if (isDisposable(this.state)) {
+      this.state.dispose();
+    }
+    if (typeof this.onDispose === 'function') {
+      this.onDispose();
+    }
     this.state = DISPOSED;
   }
 
   isDisposed() {
+    if (isDisposable(this.state)) {
+      return this.state.isDisposed();
+    }
     return this.state === DISPOSED;
   }
 }
