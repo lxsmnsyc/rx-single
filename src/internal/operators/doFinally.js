@@ -9,7 +9,13 @@ function subscribeActual(observer) {
 
   const { source, callable } = this;
 
-  const disposable = new SimpleDisposable(callable);
+  let called = false;
+  const disposable = new SimpleDisposable(() => {
+    if (!called) {
+      callable();
+      called = true;
+    }
+  });
 
   source.subscribeWith({
     onSubscribe(d) {
@@ -18,11 +24,17 @@ function subscribeActual(observer) {
     },
     onSuccess(x) {
       onSuccess(x);
-      callable();
+      if (!called) {
+        callable();
+        called = true;
+      }
     },
     onError(x) {
       onError(x);
-      callable();
+      if (!called) {
+        callable();
+        called = true;
+      }
     },
   });
 }
