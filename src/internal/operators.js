@@ -11,6 +11,7 @@ export { default as doAfterTerminate } from './operators/doAfterTerminate';
 export { default as doFinally } from './operators/doFinally';
 export { default as doOnDispose } from './operators/doOnDispose';
 export { default as doOnError } from './operators/doOnError';
+export { default as doOnEvent } from './operators/doOnEvent';
 export { default as doOnSuccess } from './operators/doOnSuccess';
 export { default as error } from './operators/error';
 export { default as fromCallable } from './operators/fromCallable';
