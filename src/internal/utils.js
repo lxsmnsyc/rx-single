@@ -83,18 +83,25 @@ export class SimpleDisposable {
   }
 
   dispose() {
-    if (isDisposable(this.state)) {
-      this.state.dispose();
+    const { state, onDispose } = this;
+
+    if (isDisposable(state)) {
+      state.dispose();
     }
-    if (typeof this.onDispose === 'function') {
-      this.onDispose();
+    if (typeof onDispose === 'function') {
+      onDispose();
     }
     this.state = DISPOSED;
   }
 
   isDisposed() {
-    if (isDisposable(this.state)) {
-      return this.state.isDisposed();
+    const { state } = this;
+    if (isDisposable(state)) {
+      if (state.isDisposed()) {
+        this.state = DISPOSED;
+        return true;
+      }
+      return false;
     }
     return this.state === DISPOSED;
   }
