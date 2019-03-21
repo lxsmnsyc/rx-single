@@ -28,12 +28,18 @@ function subscribeActual(observer) {
     },
     onSuccess(x) {
       if (!disposable.isDisposed()) {
-        timeout = setTimeout(onSuccess, amount, x);
+        timeout = setTimeout(() => {
+          disposable.dispose();
+          onSuccess(x);
+        }, amount);
       }
     },
     onError(x) {
       if (!disposable.isDisposed()) {
-        timeout = setTimeout(onError, amount, doDelayError ? x : 0);
+        timeout = setTimeout(() => {
+          disposable.dispose();
+          onError(x);
+        }, doDelayError ? amount : 0);
       }
     },
   });
