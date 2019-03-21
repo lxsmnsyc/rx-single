@@ -72,3 +72,17 @@ export function onErrorHandler(err) {
     }
   }
 }
+
+export class SimpleDisposable {
+  constructor() {
+    this.state = false;
+  }
+
+  dispose() {
+    this.state = DISPOSED;
+  }
+
+  isDisposed() {
+    return this.state === DISPOSED;
+  }
+}
