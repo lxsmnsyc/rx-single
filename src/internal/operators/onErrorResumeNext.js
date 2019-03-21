@@ -41,7 +41,9 @@ function subscribeActual(observer) {
     },
   });
 }
-
+/**
+ * @ignore
+ */
 const onErrorResumeNext = (source, resumeIfError) => {
   if (!(typeof resumeIfError === 'function' || resumeIfError instanceof Single)) {
     return source;
