@@ -2,6 +2,7 @@
 import assert from 'assert';
 import Single from '../src/single';
 import { SimpleDisposable } from '../src/internal/utils';
+
 /**
  *
  */
