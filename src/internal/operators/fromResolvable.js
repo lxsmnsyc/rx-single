@@ -1,17 +1,11 @@
-import { DISPOSED, onErrorHandler, onSuccessHandler } from '../utils';
+import { onErrorHandler, onSuccessHandler, SimpleDisposable } from '../utils';
 import Single from '../../single';
 import { error } from '../operators';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  let state;
-  const disposable = {
-    dispose() {
-      state = DISPOSED;
-    },
-    isDisposed: () => state === DISPOSED,
-  };
+  const disposable = new SimpleDisposable();
 
   onSubscribe(disposable);
 
