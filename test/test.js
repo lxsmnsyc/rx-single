@@ -290,50 +290,6 @@ describe('Single', () => {
   /**
    *
    */
-  describe('#doAfterTerminate', () => {
-    /**
-     *
-     */
-    it('should create a Single', () => {
-      const single = Single.just('Hello').doAfterSuccess(() => {});
-      assert(single instanceof Single);
-    });
-    /**
-     *
-     */
-    it('should return the same instance if the method received a non-function parameter.', () => {
-      const source = Single.just('Hello');
-      const single = source.doAfterTerminate();
-      assert(source === single);
-    });
-    /**
-     *
-     */
-    it('should call the given function after success.', (done) => {
-      let called;
-      const source = Single.just('Hello');
-      const single = source.doAfterTerminate(() => called && done());
-      single.subscribe(
-        () => { called = true; },
-        () => done(false),
-      );
-    });
-    /**
-     *
-     */
-    it('should call the given function after error.', (done) => {
-      let called;
-      const source = Single.error('Hello');
-      const single = source.doAfterTerminate(() => called && done());
-      single.subscribe(
-        () => done(false),
-        () => { called = true; },
-      );
-    });
-  });
-  /**
-   *
-   */
   describe('#doFinally', () => {
     /**
      *
@@ -424,38 +380,6 @@ describe('Single', () => {
   /**
    *
    */
-  describe('#doOnSuccess', () => {
-    /**
-     *
-     */
-    it('should create a Single', () => {
-      const single = Single.just('Hello').doAfterSuccess(() => {});
-      assert(single instanceof Single);
-    });
-    /**
-     *
-     */
-    it('should return the same instance if the method received a non-function parameter.', () => {
-      const source = Single.just('Hello');
-      const single = source.doOnSuccess();
-      assert(source === single);
-    });
-    /**
-     *
-     */
-    it('should call the given function on success.', (done) => {
-      let called;
-      const source = Single.just('Hello');
-      const single = source.doOnSuccess(() => { called = true; });
-      single.subscribe(
-        () => called && done(),
-        () => done(false),
-      );
-    });
-  });
-  /**
-   *
-   */
   describe('#doOnError', () => {
     /**
      *
@@ -482,6 +406,83 @@ describe('Single', () => {
       single.subscribe(
         () => done(false),
         () => called && done(),
+      );
+    });
+  });
+
+  /**
+   *
+   */
+  describe('#doOnEvent', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doOnEvent(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if the method received a non-function parameter.', () => {
+      const source = Single.just('Hello');
+      const single = source.doOnEvent();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should call the given function on success.', (done) => {
+      let called;
+      const source = Single.just('Hello');
+      const single = source.doOnEvent(() => { called = true; });
+      single.subscribe(
+        () => called && done(),
+        () => done(false),
+      );
+    });
+    /**
+     *
+     */
+    it('should call the given function on error.', (done) => {
+      let called;
+      const source = Single.just('Hello');
+      const single = source.doOnEvent(() => { called = true; });
+      single.subscribe(
+        () => done(false),
+        () => called && done(),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#doOnSuccess', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doAfterSuccess(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if the method received a non-function parameter.', () => {
+      const source = Single.just('Hello');
+      const single = source.doOnSuccess();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should call the given function on success.', (done) => {
+      let called;
+      const source = Single.just('Hello');
+      const single = source.doOnSuccess(() => { called = true; });
+      single.subscribe(
+        () => called && done(),
+        () => done(false),
       );
     });
   });
@@ -833,6 +834,30 @@ describe('Single', () => {
      */
     it('should create a Promise', () => {
       const single = Single.just('Hello').toPromise();
+      assert(single instanceof Promise);
+    });
+  });
+  /**
+   *
+   */
+  describe('#then', () => {
+    /**
+     *
+     */
+    it('should create a Promise', () => {
+      const single = Single.just('Hello').then(x => x, x => x);
+      assert(single instanceof Promise);
+    });
+  });
+  /**
+   *
+   */
+  describe('#catch', () => {
+    /**
+     *
+     */
+    it('should create a Promise', () => {
+      const single = Single.just('Hello').catch(x => x);
       assert(single instanceof Promise);
     });
   });
