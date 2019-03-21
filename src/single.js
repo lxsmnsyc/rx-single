@@ -29,7 +29,8 @@ import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
-  doOnDispose, doOnError, doOnSuccess, doOnEvent, onErrorResumeNext,
+  doOnDispose, doOnError, doOnSuccess, doOnEvent,
+  onErrorResumeNext, onErrorReturnItem, onErrorReturn,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -295,9 +296,30 @@ export default class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.onErrorResumeNext.png" class="diagram">
    *
    * @param {!(function(x: any):Single|Single)} resumeIfError
+   * @returns {Single}
    */
   onErrorResumeNext(resumeIfError) {
     return onErrorResumeNext(this, resumeIfError);
+  }
+
+  /**
+   * Instructs a Single to emit an item (returned by a specified function)
+   * rather than invoking onError if it encounters an error.
+   * @param {!Function} supplier
+   * @returns {Single}
+   */
+  onErrorReturn(supplier) {
+    return onErrorReturn(this, supplier);
+  }
+
+
+  /**
+   * Signals the specified value as success in case the current Single signals an error.
+   * @param {any} item
+   * @returns {Single}
+   */
+  onErrorReturnItem(item) {
+    return onErrorReturnItem(this, item);
   }
 
   /**
