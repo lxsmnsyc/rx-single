@@ -30,7 +30,7 @@ import {
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
-  onErrorResumeNext, onErrorReturnItem, onErrorReturn,
+  onErrorResumeNext, onErrorReturnItem, onErrorReturn, timeout,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -378,6 +378,16 @@ export default class Single {
    */
   static timer(amount) {
     return timer(amount);
+  }
+
+  /**
+   * Signals a TimeoutException if the current Single doesn't signal
+   * a success value within the specified timeout window.
+   * @param {!Number} amount - amount of time in milliseconds.
+   * @returns {Single}
+   */
+  timeout(amount) {
+    return timeout(this, amount);
   }
 
   /**
