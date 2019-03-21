@@ -28,7 +28,7 @@
 import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
-  timer, doAfterSuccess, doAfterTerminate, doFinally,
+  timer, doAfterSuccess, doAfterTerminate, doFinally, doOnDispose,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -130,6 +130,10 @@ export default class Single {
    */
   doFinally(callable) {
     return doFinally(this, callable);
+  }
+
+  doOnDispose(callable) {
+    return doOnDispose(this, callable);
   }
 
   /**
