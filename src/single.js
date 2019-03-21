@@ -27,7 +27,7 @@
  */
 import {
   create, contains, just, error, defer, delay,
-  never, map, fromPromise, fromResolvable, fromCallable,
+  never, map, fromPromise, fromResolvable, fromCallable, timer,
 } from './internal/operators';
 
 /**
@@ -235,5 +235,9 @@ export default class Single {
    */
   static fromCallable(callable) {
     return fromCallable(callable);
+  }
+
+  static timer(amount) {
+    return timer(amount);
   }
 }
