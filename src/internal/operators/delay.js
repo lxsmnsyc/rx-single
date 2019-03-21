@@ -1,4 +1,5 @@
 import Single from '../../single';
+import { isDisposable, DISPOSED } from '../utils';
 
 /**
  * @ignore
@@ -6,15 +7,44 @@ import Single from '../../single';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
+  let state;
+  let timeout;
+
+  const disposable = {
+    dispose() {
+      if (isDisposable(state)) {
+        state.dispose();
+      }
+      if (typeof timeout !== 'undefined') {
+        clearTimeout(timeout);
+      }
+      state = DISPOSED;
+    },
+
+    isDisposed() {
+      return state === DISPOSED;
+    },
+  };
+
+  onSubscribe(disposable);
+
   const { amount, doDelayError } = this;
 
   this.source.subscribeWith({
-    onSubscribe,
+    onSubscribe(d) {
+      if (isDisposable(d)) {
+        state = d;
+      }
+    },
     onSuccess(x) {
-      setTimeout(onSuccess, amount, x);
+      if (state !== DISPOSED) {
+        timeout = setTimeout(onSuccess, amount, x);
+      }
     },
     onError(x) {
-      setTimeout(onError, amount, doDelayError ? x : 0);
+      if (state !== DISPOSED) {
+        timeout = setTimeout(onError, amount, doDelayError ? x : 0);
+      }
     },
   });
 }
