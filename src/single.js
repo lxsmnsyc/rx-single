@@ -29,7 +29,7 @@ import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
-  doOnDispose, doOnError, doOnSuccess, doOnEvent,
+  doOnDispose, doOnError, doOnSuccess, doOnEvent, onErrorResumeNext,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -284,6 +284,20 @@ export default class Single {
    */
   static never() {
     return never();
+  }
+
+  /**
+   * Instructs a Single to pass control to another Single
+   * rather than invoking Observer.onError if it encounters
+   * an error.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.onErrorResumeNext.f.png" class="diagram">
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.onErrorResumeNext.png" class="diagram">
+   *
+   * @param {!(function(x: any):Single|Single)} resumeIfError
+   */
+  onErrorResumeNext(resumeIfError) {
+    return onErrorResumeNext(this, resumeIfError);
   }
 
   /**
