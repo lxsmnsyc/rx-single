@@ -24,3 +24,4 @@ export { default as onErrorReturn } from './operators/onErrorReturn';
 export { default as onErrorReturnItem } from './operators/onErrorReturnItem';
 export { default as never } from './operators/never';
 export { default as timer } from './operators/timer';
+export { default as timeout } from './operators/timeout';
