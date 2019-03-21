@@ -28,7 +28,8 @@
 import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
-  timer, doAfterSuccess, doAfterTerminate, doFinally, doOnDispose, doOnError, doOnSuccess,
+  timer, doAfterSuccess, doAfterTerminate, doFinally,
+  doOnDispose, doOnError, doOnSuccess, doOnEvent,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -47,7 +48,7 @@ export default class Single {
    *
    * @example
    * const single = Single.create(e => e.onSuccess('Hello World'));
-   * @param {!Function} subscriber - A function that accepts the Emitter interface.
+   * @param {!function(e: Emitter):any} subscriber - A function that accepts the Emitter interface.
    * @returns {Single}
    */
   static create(subscriber) {
@@ -59,7 +60,8 @@ export default class Single {
    * that is equal or if the comparer returns true
    * with the value provided.
    * @param {!any} value - The value to be compared with.
-   * @param {?Function} comparer - A function that accepts two values to be compared.
+   * @param {?function(x: any, successValue: any):any} comparer
+   * A function that accepts two values to be compared.
    * @returns {Single}
    */
   contains(value, comparer) {
@@ -72,7 +74,7 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.defer.png" class="diagram">
    *
-   * @param {!Function} callable - A function that returns a Single.
+   * @param {!function():any} callable - A function that returns a Single.
    * @returns {Single}
    */
   static defer(callable) {
@@ -98,7 +100,7 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doAfterSuccess.png" class="diagram">
    *
-   * @param {!Function} callable
+   * @param {!function(x: any)} callable
    * @returns {Single}
    */
   doAfterSuccess(callable) {
@@ -111,7 +113,7 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doAfterTerminate.png" class="diagram">
    *
-   * @param {!Function} callable
+   * @param {!function} callable
    * @returns {Single}
    */
   doAfterTerminate(callable) {
@@ -150,9 +152,9 @@ export default class Single {
    * Calls the shared function with the error sent via onError
    * for each Observer that subscribes to the current Single.
    *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnError.png" class="diagram">
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnError.2.png" class="diagram">
    *
-   * @param {!Function} callable
+   * @param {!function(x: any)} callable
    * @returns {Single}
    */
   doOnError(callable) {
@@ -160,12 +162,24 @@ export default class Single {
   }
 
   /**
+   * Calls the shared consumer with the error sent via onError
+   * or the value via onSuccess for each SingleObserver that
+   * subscribes to the current Single.
+   *
+   * @param {!function(onSuccess: any, onError: any)} callable
+   * @returns {Single}
+   */
+  doOnEvent(callable) {
+    return doOnEvent(this, callable);
+  }
+
+  /**
    * Calls the shared function with the error sent via onSuccess
    * for each Observer that subscribes to the current Single.
    *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSuccess.png" class="diagram">
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSuccess.2.png" class="diagram">
    *
-   * @param {!Function} callable
+   * @param {!function(x: any)} callable
    * @returns {Single}
    */
   doOnSuccess(callable) {
@@ -182,7 +196,7 @@ export default class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.png" class="diagram">
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
    *
-   * @param {!(Function|any)} err - A function or an error value.
+   * @param {!(function():any|any)} err - A function or an error value.
    * @returns {Single}
    */
   static error(err) {
@@ -203,7 +217,7 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.fromCallable.png" class="diagram">
    *
-   * @param {!Function} callable - a function that returns a value.
+   * @param {!function():any} callable - a function that returns a value.
    * The value returned becomes the success value
    * of the returned Single, otherwise if the function throws an error,
    * the Single sends an error signal.
@@ -224,7 +238,8 @@ export default class Single {
 
   /**
    * Provides a Promise-like interface for emitting signals.
-   * @param {!Function} fulfillable - A function that accepts two parameters: resolve and reject,
+   * @param {!function(resolve: function, reject:function))} fulfillable
+   * A function that accepts two parameters: resolve and reject,
    * similar to a Promise construct.
    * @returns {Single}
    */
@@ -251,7 +266,8 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.map.png" class="diagram">
    *
-   * @param {?Function} mapper - A function that accepts the success value and transforms it.
+   * @param {?function(x: any):any} mapper
+   * A function that accepts the success value and transforms it.
    * @returns {Single}
    */
   map(mapper) {
@@ -259,7 +275,8 @@ export default class Single {
   }
 
   /**
-   * Creates a Single that doesn't succeed or error.
+   * Returns a singleton instance of a never-signalling
+   * Single (only calls onSubscribe).
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.never.png" class="diagram">
    *
@@ -298,8 +315,8 @@ export default class Single {
    * onError receives a string(or an Error object).
    *
    * Both are called once.
-   * @param {?Function} onSuccess
-   * @param {?Function} onError
+   * @param {?function(x: any)} onSuccess
+   * @param {?function(x: any)} onError
    * @returns {Disposable} returns an object that implements the
    *  Disposable interface.
    */
@@ -338,5 +355,26 @@ export default class Single {
     return new Promise((res, rej) => {
       this.subscribe(res, rej);
     });
+  }
+
+  /**
+   * Converts the Single to a Promise instance and attaches callbacks
+   * to it.
+   * @param {!function(x: any):any} onFulfill
+   * @param {?function(x: any):any} onReject
+   * @returns {Promise}
+   */
+  then(onFulfill, onReject) {
+    return this.toPromise().then(onFulfill, onReject);
+  }
+
+  /**
+   * Converts the Single to a Promise instance and attaches an onRejection
+   * callback to it.
+   * @param {!function(x: any):any} onReject
+   * @returns {Promise}
+   */
+  catch(onReject) {
+    return this.toPromise().catch(onReject);
   }
 }
