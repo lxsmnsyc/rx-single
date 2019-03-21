@@ -28,7 +28,7 @@
 import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
-  timer, doAfterSuccess, doAfterTerminate, doFinally, doOnDispose,
+  timer, doAfterSuccess, doAfterTerminate, doFinally, doOnDispose, doOnError, doOnSuccess,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -132,8 +132,44 @@ export default class Single {
     return doFinally(this, callable);
   }
 
+  /**
+   * Calls the shared function if a Observer subscribed to the
+   * current Single disposes the common Disposable it received
+   * via onSubscribe.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
+   *
+   * @param {!Function} callable
+   * @returns {Single}
+   */
   doOnDispose(callable) {
     return doOnDispose(this, callable);
+  }
+
+  /**
+   * Calls the shared function with the error sent via onError
+   * for each Observer that subscribes to the current Single.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnError.png" class="diagram">
+   *
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  doOnError(callable) {
+    return doOnError(this, callable);
+  }
+
+  /**
+   * Calls the shared function with the error sent via onSuccess
+   * for each Observer that subscribes to the current Single.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSuccess.png" class="diagram">
+   *
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  doOnSuccess(callable) {
+    return doOnSuccess(this, callable);
   }
 
   /**
