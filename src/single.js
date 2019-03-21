@@ -27,15 +27,18 @@
  */
 import {
   create, contains, just, error, defer, delay,
-  never, map, fromPromise, fromResolvable, fromCallable, timer, doAfterSuccess, doAfterTerminate,
+  never, map, fromPromise, fromResolvable, fromCallable,
+  timer, doAfterSuccess, doAfterTerminate, doFinally,
 } from './internal/operators';
+import { SimpleDisposable } from './internal/utils';
 
 /**
  *
  */
 export default class Single {
   /**
-   * Creates a Single with a given subscriber.
+   * Provides an API (via a cold Single) that bridges
+   * the reactive world with the callback-style world.
    *
    * This subscriber is a function that receives
    * an object that implements the Emitter interface.
@@ -52,8 +55,9 @@ export default class Single {
   }
 
   /**
-   * Compares the success value of the Single to a given
-   * value, and emits the boolean result.
+   * Signals true if the current Single signals a success value
+   * that is equal or if the comparer returns true
+   * with the value provided.
    * @param {!any} value - The value to be compared with.
    * @param {?Function} comparer - A function that accepts two values to be compared.
    * @returns {Single}
@@ -63,7 +67,7 @@ export default class Single {
   }
 
   /**
-   * Calls a Callable for each individual Observer
+   * Calls a function for each individual Observer
    * to return the actual Single to be subscribed to.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.defer.png" class="diagram">
@@ -91,6 +95,9 @@ export default class Single {
   /**
    * Calls the specified callable with the success item
    * after this item has been emitted to the downstream.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doAfterSuccess.png" class="diagram">
+   *
    * @param {!Function} callable
    * @returns {Single}
    */
@@ -101,6 +108,9 @@ export default class Single {
   /**
    * Registers a function to be called after this Single
    * invokes either onSuccess or onError.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doAfterTerminate.png" class="diagram">
+   *
    * @param {!Function} callable
    * @returns {Single}
    */
@@ -109,7 +119,25 @@ export default class Single {
   }
 
   /**
+   * Registers a function to be called after this Single
+   * invokes either onSuccess or onError, or when the Single
+   * gets disposed.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doFinally.png" class="diagram">
+   *
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  doFinally(callable) {
+    return doFinally(this, callable);
+  }
+
+  /**
    * Creates a Single with an error.
+   *
+   * Signals an error returned by the callback function
+   * for each individual Observer or returns a Single that
+   * invokes a subscriber's onError method when the subscriber subscribes to it.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.png" class="diagram">
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
@@ -155,7 +183,7 @@ export default class Single {
   }
 
   /**
-   * Provides a Promise-like interface for emitting success values.
+   * Provides a Promise-like interface for emitting signals.
    * @param {!Function} fulfillable - A function that accepts two parameters: resolve and reject,
    * similar to a Promise construct.
    * @returns {Single}
@@ -236,11 +264,10 @@ export default class Single {
    *  Disposable interface.
    */
   subscribe(onSuccess, onError) {
-    const disposable = {};
+    const disposable = new SimpleDisposable();
     this.subscribeActual({
       onSubscribe(d) {
-        disposable.dispose = d.dispose;
-        disposable.isDisposed = d.isDisposed;
+        disposable.setDisposable(d);
       },
       onSuccess,
       onError,
@@ -250,6 +277,9 @@ export default class Single {
 
   /**
    * Signals success with 0 value after the given delay for each Observer.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.timer.png" class="diagram">
+   *
    * @param {!Number} amount - amount of time in milliseconds.
    * @returns {Single}
    */
