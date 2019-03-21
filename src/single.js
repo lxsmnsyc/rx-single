@@ -27,7 +27,7 @@
  */
 import {
   create, contains, just, error, defer, delay,
-  never, map, fromPromise, fromResolvable, fromCallable, timer,
+  never, map, fromPromise, fromResolvable, fromCallable, timer, doAfterSuccess, doAfterTerminate,
 } from './internal/operators';
 
 /**
@@ -44,11 +44,68 @@ export default class Single {
    *
    * @example
    * const single = Single.create(e => e.onSuccess('Hello World'));
-   * @param {Function} subscriber
+   * @param {!Function} subscriber - A function that accepts the Emitter interface.
    * @returns {Single}
    */
   static create(subscriber) {
     return create(subscriber);
+  }
+
+  /**
+   * Compares the success value of the Single to a given
+   * value, and emits the boolean result.
+   * @param {!any} value - The value to be compared with.
+   * @param {?Function} comparer - A function that accepts two values to be compared.
+   * @returns {Single}
+   */
+  contains(value, comparer) {
+    return contains(this, value, comparer);
+  }
+
+  /**
+   * Calls a Callable for each individual Observer
+   * to return the actual Single to be subscribed to.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.defer.png" class="diagram">
+   *
+   * @param {!Function} callable - A function that returns a Single.
+   * @returns {Single}
+   */
+  static defer(callable) {
+    return defer(callable);
+  }
+
+  /**
+   * Delays the emission of the success signal from the current Single by the specified amount.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.delay.e.png" class="diagram">
+   *
+   * @param {!Number} amount - the amount of time in milliseconds
+   * @param {?Boolean} doDelayError - if true, the error signal is delayed.
+   * @returns {Single}
+   */
+  delay(amount, doDelayError) {
+    return delay(this, amount, doDelayError);
+  }
+
+  /**
+   * Calls the specified callable with the success item
+   * after this item has been emitted to the downstream.
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  doAfterSuccess(callable) {
+    return doAfterSuccess(this, callable);
+  }
+
+  /**
+   * Registers a function to be called after this Single
+   * invokes either onSuccess or onError.
+   * @param {!Function} callable
+   * @returns {Single}
+   */
+  doAfterTerminate(callable) {
+    return doAfterTerminate(this, callable);
   }
 
   /**
@@ -57,7 +114,7 @@ export default class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.png" class="diagram">
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
    *
-   * @param {!(Function|any)} err
+   * @param {!(Function|any)} err - A function or an error value.
    * @returns {Single}
    */
   static error(err) {
@@ -65,15 +122,72 @@ export default class Single {
   }
 
   /**
+   * Returns a Single that invokes passed function and emits its result
+   * for each new SingleObserver that subscribes.
+   *
+   * Allows you to defer execution of passed function until Observer subscribes
+   * to the Single. It makes passed function "lazy".
+   *
+   * Result of the function invocation will be emitted by the Single.
+   *
+   * If the result is a Promise-like instance, the Observer is then
+   * subscribed to the Promise through the fromPromise operator.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.fromCallable.png" class="diagram">
+   *
+   * @param {!Function} callable - a function that returns a value.
+   * The value returned becomes the success value
+   * of the returned Single, otherwise if the function throws an error,
+   * the Single sends an error signal.
+   * @returns {Single}
+   */
+  static fromCallable(callable) {
+    return fromCallable(callable);
+  }
+
+  /**
+   * Converts a Promise-like instance into a Single.
+   * @param {!(Promise|Thennable|PromiseLike)} promise - The promise to be converted into a Single.
+   * @returns {Single}
+   */
+  static fromPromise(promise) {
+    return fromPromise(promise);
+  }
+
+  /**
+   * Provides a Promise-like interface for emitting success values.
+   * @param {!Function} fulfillable - A function that accepts two parameters: resolve and reject,
+   * similar to a Promise construct.
+   * @returns {Single}
+   */
+  static fromResolvable(fulfillable) {
+    return fromResolvable(fulfillable);
+  }
+
+  /**
    * Creates a Single with a success value.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.just.png" class="diagram">
    *
-   * @param {!any} value
+   * @param {!any} value - A non-undefined value.
    * @returns {Single}
    */
   static just(value) {
     return just(value);
+  }
+
+  /**
+   * Returns a Single that applies a specified function
+   * to the item emitted by the source Single and emits
+   * the result of this function application.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.map.png" class="diagram">
+   *
+   * @param {?Function} mapper - A function that accepts the success value and transforms it.
+   * @returns {Single}
+   */
+  map(mapper) {
+    return map(this, mapper);
   }
 
   /**
@@ -85,19 +199,6 @@ export default class Single {
    */
   static never() {
     return never();
-  }
-
-  /**
-   * Calls a Callable for each individual Observer
-   * to return the actual Single to be subscribed to.
-   *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.defer.png" class="diagram">
-   *
-   * @param {!Function} callable
-   * @returns {Single}
-   */
-  static defer(callable) {
-    return defer(callable);
   }
 
   /**
@@ -148,6 +249,15 @@ export default class Single {
   }
 
   /**
+   * Signals success with 0 value after the given delay for each Observer.
+   * @param {!Number} amount - amount of time in milliseconds.
+   * @returns {Single}
+   */
+  static timer(amount) {
+    return timer(amount);
+  }
+
+  /**
    * Converts the Single to a Promise instance.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.toMaybe.png" class="diagram">
@@ -158,86 +268,5 @@ export default class Single {
     return new Promise((res, rej) => {
       this.subscribe(res, rej);
     });
-  }
-
-  /**
-   * Compares the success value of the Single to a given
-   * value, and emits the boolean result.
-   * @param {any} value
-   * @param {?Function} comparer
-   * @returns {Single}
-   */
-  contains(value, comparer) {
-    return contains(this, value, comparer);
-  }
-
-  /**
-   * Delays the emission of the success signal from the current Single by the specified amount.
-   *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.delay.e.png" class="diagram">
-   *
-   * @param {Number} amount
-   * @param {?Boolean} doDelayError
-   * @returns {Single}
-   */
-  delay(amount, doDelayError) {
-    return delay(this, amount, doDelayError);
-  }
-
-  /**
-   * Returns a Single that applies a specified function
-   * to the item emitted by the source Single and emits
-   * the result of this function application.
-   *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.map.png" class="diagram">
-   *
-   * @param {Function} mapper
-   * @returns {Single}
-   */
-  map(mapper) {
-    return map(this, mapper);
-  }
-
-  /**
-   * Converts a Promise-like instance into a Single.
-   * @param {Promise|Thennable|PromiseLike} promise
-   * @returns {Single}
-   */
-  static fromPromise(promise) {
-    return fromPromise(promise);
-  }
-
-  /**
-   * Provides a Promise-like interface for emitting success values.
-   * @param {!Function} fulfillable
-   * @returns {Single}
-   */
-  static fromResolvable(fulfillable) {
-    return fromResolvable(fulfillable);
-  }
-
-  /**
-   * Returns a Single that invokes passed function and emits its result
-   * for each new SingleObserver that subscribes.
-   *
-   * Allows you to defer execution of passed function until Observer subscribes
-   * to the Single. It makes passed function "lazy".
-   *
-   * Result of the function invocation will be emitted by the Single.
-   *
-   * If the result is a Promise-like instance, the Observer is then
-   * subscribed to the Promise through the fromPromise operator.
-   *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.fromCallable.png" class="diagram">
-   *
-   * @param {!Function} callable
-   * @returns {Single}
-   */
-  static fromCallable(callable) {
-    return fromCallable(callable);
-  }
-
-  static timer(amount) {
-    return timer(amount);
   }
 }
