@@ -290,6 +290,50 @@ describe('Single', () => {
   /**
    *
    */
+  describe('#doAfterTerminate', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doAfterSuccess(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if the method received a non-function parameter.', () => {
+      const source = Single.just('Hello');
+      const single = source.doAfterTerminate();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should call the given function after success.', (done) => {
+      let called;
+      const source = Single.just('Hello');
+      const single = source.doAfterTerminate(() => called && done());
+      single.subscribe(
+        () => { called = true; },
+        () => done(false),
+      );
+    });
+    /**
+     *
+     */
+    it('should call the given function after error.', (done) => {
+      let called;
+      const source = Single.error('Hello');
+      const single = source.doAfterTerminate(() => called && done());
+      single.subscribe(
+        () => done(false),
+        () => { called = true; },
+      );
+    });
+  });
+  /**
+   *
+   */
   describe('#doFinally', () => {
     /**
      *
@@ -401,7 +445,7 @@ describe('Single', () => {
      */
     it('should call the given function on error.', (done) => {
       let called;
-      const source = Single.just('Hello');
+      const source = Single.error('Hello');
       const single = source.doOnError(() => { called = true; });
       single.subscribe(
         () => done(false),
@@ -446,7 +490,7 @@ describe('Single', () => {
      */
     it('should call the given function on error.', (done) => {
       let called;
-      const source = Single.just('Hello');
+      const source = Single.error('Hello');
       const single = source.doOnEvent(() => { called = true; });
       single.subscribe(
         () => done(false),
@@ -751,6 +795,66 @@ describe('Single', () => {
       single.subscribe(
         x => (x === 'Hello' ? done() : done(false)),
         e => done(e),
+      );
+    });
+  });
+  /**
+   *
+   */
+  describe('#onErrorResumeNext', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.error('Hello').onErrorResumeNext(Single.just('World'));
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if parameter passed is not a Single or a function', () => {
+      const source = Single.error('Hello');
+      const single = source.onErrorResumeNext();
+      assert(single === source);
+    });
+    /**
+     *
+     */
+    it('should subscribe to the given Single', (done) => {
+      const single = Single.error('Hello').onErrorResumeNext(Single.just('World'));
+      single.subscribe(
+        () => done(),
+        done,
+      );
+    });
+    /**
+     *
+     */
+    it('should subscribe to the given Single-producing Function', (done) => {
+      const single = Single.error('Hello').onErrorResumeNext(() => Single.just('World'));
+      single.subscribe(
+        () => done(),
+        done,
+      );
+    });
+    /**
+     *
+     */
+    it('should emit error if provide function throws error.', (done) => {
+      const single = Single.error('Hello').onErrorResumeNext(() => { throw new Error('Ooops'); });
+      single.subscribe(
+        done,
+        () => done(),
+      );
+    });
+    /**
+     *
+     */
+    it('should emit error if provide function returns non-Single.', (done) => {
+      const single = Single.error('Hello').onErrorResumeNext(() => {});
+      single.subscribe(
+        done,
+        () => done(),
       );
     });
   });
