@@ -1,5 +1,5 @@
 import {
-  DISPOSED, isDisposable, onErrorHandler, onSuccessHandler,
+  onErrorHandler, onSuccessHandler, SimpleDisposable,
 } from '../utils';
 import Single from '../../single';
 import { error } from '../operators';
@@ -10,25 +10,9 @@ import { error } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  let disposable;
-  const emitter = {
-    onSuccess: onSuccessHandler.bind(this),
-    onError: onErrorHandler.bind(this),
-    setDisposable(d) {
-      if (isDisposable(d)) {
-        disposable = d;
-      }
-    },
-    dispose() {
-      if (isDisposable(disposable)) {
-        disposable.dispose();
-      }
-      disposable = DISPOSED;
-    },
-    isDisposed() {
-      return disposable === DISPOSED;
-    },
-  };
+  const emitter = new SimpleDisposable();
+  emitter.onSuccess = onSuccessHandler.bind(this);
+  emitter.onError = onErrorHandler.bind(this);
 
   this.disposable = emitter;
   this.onSuccess = onSuccess;
