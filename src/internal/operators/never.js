@@ -10,10 +10,16 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
+let INSTANCE;
+/**
+ * @ignore
+ */
 const never = () => {
-  const single = new Single();
-  single.subscribeActual = subscribeActual.bind(single);
-  return single;
+  if (typeof INSTANCE === 'undefined') {
+    INSTANCE = new Single();
+    INSTANCE.subscribeActual = subscribeActual.bind(INSTANCE);
+  }
+  return INSTANCE;
 };
 
 export default never;
