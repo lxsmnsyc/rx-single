@@ -116,6 +116,6 @@ export class SimpleDisposable {
       }
       return false;
     }
-    return this.state === DISPOSED;
+    return state === DISPOSED;
   }
 }
