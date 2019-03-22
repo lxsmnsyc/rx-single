@@ -61,8 +61,10 @@ function subscribeActual(observer) {
           }
         },
         onError(x) {
-          disposable.dispose();
-          onError(x);
+          if (!disposable.isDisposed()) {
+            disposable.dispose();
+            onError(x);
+          }
         },
       });
     } else if (typeof single !== 'undefined') {
