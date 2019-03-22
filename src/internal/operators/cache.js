@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { disposed, SimpleDisposable } from '../utils';
+import { SimpleDisposable } from '../utils';
 
 
 function subscribeActual(observer) {
@@ -46,7 +46,8 @@ function subscribeActual(observer) {
       this.subscribed = true;
     }
   } else {
-    onSubscribe(disposed);
+    const disposable = new SimpleDisposable();
+    onSubscribe(disposable);
 
     const { value, error } = this;
     if (typeof value !== 'undefined') {
@@ -55,6 +56,7 @@ function subscribeActual(observer) {
     if (typeof error !== 'undefined') {
       onError(value);
     }
+    disposable.dispose();
   }
 }
 
