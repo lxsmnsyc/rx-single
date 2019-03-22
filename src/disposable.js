@@ -3,7 +3,7 @@
  * Represents a disposable/cancellable state.
  */
 // eslint-disable-next-line no-unused-vars
-class Disposable {
+export default class Disposable {
   /**
    * Disposes the instance
    * @abstract
