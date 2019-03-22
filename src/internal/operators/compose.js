@@ -1,6 +1,9 @@
 import Single from '../../single';
 import { error } from '../operators';
 
+/**
+ * @ignore
+ */
 const compose = (source, transformer) => {
   if (typeof transformer !== 'function') {
     return source;
