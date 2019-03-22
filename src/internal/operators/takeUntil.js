@@ -1,6 +1,9 @@
 import Single from '../../single';
 import { CompositeDisposable } from '../utils';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
@@ -41,6 +44,9 @@ function subscribeActual(observer) {
   }
 }
 
+/**
+ * @ignore
+ */
 const takeUntil = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
