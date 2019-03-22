@@ -9,6 +9,10 @@ export const isDisposable = obj => typeof obj === 'object' && (typeof obj.dispos
 /**
  * @ignore
  */
+export const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.iterator] === 'function';
+/**
+ * @ignore
+ */
 export const disposed = {
   dispose: () => {},
   isDisposed: () => true,
