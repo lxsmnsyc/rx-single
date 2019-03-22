@@ -12,6 +12,54 @@ JS Implementation of the Reactive Extensions (RxJava) [Single](http://reactivex.
 
 ## Install
 
+NPM
+
+```bash
+npm i rx-single
+```
+
+CDN
+
+* jsDelivr
+```html
+<script src="https://cdn.jsdelivr.net/npm/rx-single/dist/index.min.js"></script>
+```
+
+* unpkg
+```html
+<script src="https://unpkg.com/rx-single/dist/index.min.js"></script>
+```
+
 ## Usage
 
+### Loading the module
+
+#### CommonJS
+
+```js
+const Single = require('rx-single');
+```
+
+Loading the CommonJS module provides the Single class.
+
+#### Browser
+
+Loading the JavaScript file for the rx-single provides the Single class
+
+## Documentation
+
+You can read the documentation at the [official doc site](https://lxsmnsyc.github.io/rx-single/)
+
 ## Build
+
+Clone the repo first, then run the following to install the dependencies
+
+```bash
+npm install
+```
+
+To build the coverages, run the test suite, the docs, and the distributable modules:
+
+```bash
+npm run build
+```
