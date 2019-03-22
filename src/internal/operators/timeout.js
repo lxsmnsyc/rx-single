@@ -9,16 +9,22 @@ function subscribeActual(observer) {
 
   const { amount } = this;
 
-  const timeout = setTimeout(
-    onError,
-    amount,
-    'Single.timeout: TimeoutException (no success signals within the specified timeout).',
-  );
+  let timeout;
 
   const disposable = new SimpleDisposable(() => {
     clearTimeout(timeout);
   });
 
+  const err = (x) => {
+    onError(x);
+    disposable.dispose();
+  };
+
+  timeout = setTimeout(
+    err,
+    amount,
+    'Single.timeout: TimeoutException (no success signals within the specified timeout).',
+  );
   onSubscribe(disposable);
 
   this.source.subscribeWith({
@@ -29,10 +35,7 @@ function subscribeActual(observer) {
       onSuccess(x);
       disposable.dispose();
     },
-    onError(x) {
-      onError(x);
-      disposable.dispose();
-    },
+    onError: err,
   });
 }
 /**
