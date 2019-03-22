@@ -123,3 +123,35 @@ export class SimpleDisposable {
     return state === DISPOSED;
   }
 }
+
+export class CompositeDisposable {
+  constructor() {
+    this.set = [];
+    this.disposed = false;
+  }
+
+  add(d) {
+    if (isDisposable(d)) {
+      if (this.disposed) {
+        d.dispose();
+      } else {
+        this.set.push(d);
+      }
+    }
+  }
+
+  dispose() {
+    if (!this.disposed) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const d of this.set) {
+        d.dispose();
+      }
+      this.set = undefined;
+      this.disposed = DISPOSED;
+    }
+  }
+
+  isDisposed() {
+    return this.disposed === DISPOSED;
+  }
+}
