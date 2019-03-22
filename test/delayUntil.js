@@ -48,6 +48,16 @@ describe('Single', () => {
     /**
      *
      */
+    it('should signal error if other Single signals error.', (done) => {
+      const single = Single.error('World').delayUntil(Single.error('Hello'));
+      single.subscribe(
+        x => done(x),
+        x => (x === 'Hello' ? done() : done(false)),
+      );
+    });
+    /**
+     *
+     */
     it('should not signal success if disposed.', (done) => {
       const source = Single.just('Hello').delayUntil(Single.timer(100));
       const disposable = source.subscribe(
