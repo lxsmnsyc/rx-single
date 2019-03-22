@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { SimpleDisposable, isDisposable, isIterable } from '../utils';
+import { isIterable, CompositeDisposable } from '../utils';
 import error from './error';
 
 const defaultZipper = x => x;
@@ -9,17 +9,9 @@ const defaultZipper = x => x;
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const composite = [];
   const result = [];
 
-  const disposable = new SimpleDisposable(() => {
-    // eslint-disable-next-line no-restricted-syntax
-    for (const d of composite) {
-      if (isDisposable(d)) {
-        d.dispose();
-      }
-    }
-  });
+  const disposable = new CompositeDisposable();
 
   onSubscribe(disposable);
 
@@ -28,8 +20,8 @@ function subscribeActual(observer) {
   const size = sources.length;
 
   if (size === 0) {
-    disposable.dispose();
     onError('Single.zip: empty iterable');
+    disposable.dispose();
     return;
   }
   let pending = size;
@@ -43,7 +35,7 @@ function subscribeActual(observer) {
     if (single instanceof Single) {
       single.subscribeWith({
         onSubscribe(d) {
-          composite[i] = d;
+          disposable.add(d);
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
@@ -51,7 +43,6 @@ function subscribeActual(observer) {
             result[i] = x;
             pending -= 1;
             if (pending === 0) {
-              disposable.dispose();
               let r;
               try {
                 r = zipper(result);
@@ -60,16 +51,18 @@ function subscribeActual(observer) {
                 }
               } catch (e) {
                 onError(e);
+                disposable.dispose();
                 return;
               }
               onSuccess(r);
+              disposable.dispose();
             }
           }
         },
         onError(x) {
           if (!disposable.isDisposed()) {
-            disposable.dispose();
             onError(x);
+            disposable.dispose();
           }
         },
       });
@@ -77,8 +70,8 @@ function subscribeActual(observer) {
       result[i] = single;
       pending -= 1;
     } else {
-      disposable.dispose();
       onError('Single.zip: One of the sources is undefined.');
+      disposable.dispose();
       break;
     }
   }
