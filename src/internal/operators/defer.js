@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { disposed } from '../utils';
+import { immediateError } from '../utils';
 
 /**
  * @ignore
@@ -20,8 +20,7 @@ function subscribeActual(observer) {
   }
 
   if (typeof err !== 'undefined') {
-    onSubscribe(disposed);
-    onError(err);
+    immediateError(observer, err);
   } else {
     result.subscribeWith({
       onSubscribe,
