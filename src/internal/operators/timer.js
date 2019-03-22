@@ -18,10 +18,12 @@ function subscribeActual(observer) {
 
   onSubscribe(disposable);
 
-  timeout = setTimeout(() => {
-    onSuccess(0);
-    disposable.dispose();
-  }, this.amount);
+  if (!disposable.isDisposed()) {
+    timeout = setTimeout(() => {
+      onSuccess(0);
+      disposable.dispose();
+    }, this.amount);
+  }
 }
 /**
  * @ignore
