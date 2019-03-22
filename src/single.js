@@ -40,7 +40,8 @@ import {
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
-  onErrorResumeNext, onErrorReturnItem, onErrorReturn, timeout, zipWith, zip, doOnSubscribe,
+  onErrorResumeNext, onErrorReturnItem, onErrorReturn,
+  timeout, zipWith, zip, doOnSubscribe, ambWith,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -93,6 +94,19 @@ export default class Single {
    */
   static create(subscriber) {
     return create(subscriber);
+  }
+
+  /**
+   * Signals the event of this or the other Single whichever
+   * signals first.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.ambWith.png" class="diagram">
+   *
+   * @param {Single} other
+   * @returns {Single}
+   */
+  ambWith(other) {
+    return ambWith(this, other);
   }
 
   /**
