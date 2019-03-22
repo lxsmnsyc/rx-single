@@ -1,11 +1,10 @@
-import { disposed, toCallable } from '../utils';
+import { toCallable, immediateError } from '../utils';
 import Single from '../../single';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  observer.onSubscribe(disposed);
 
   let err;
 
@@ -18,7 +17,7 @@ function subscribeActual(observer) {
   } catch (e) {
     err = e;
   }
-  observer.onError(err);
+  immediateError(observer, err);
 }
 /**
  * @ignore
