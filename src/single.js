@@ -494,11 +494,11 @@ export default class Single {
    * that emits the item emitted by the nested Single, without
    * any transformation.
    *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/merge.oo.png" class="diagram">
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.merge.oo.png" class="diagram">
    *
    * @param {!Single} source
    * a Single that emits a Single
-   * @returns {Single
+   * @returns {Single}
    * a Single that emits the item that is the result of flattening
    * the Single emitted by source.
    */
@@ -603,6 +603,8 @@ export default class Single {
    * the current Single indefinitely if it fails with an onError.
    *
    * @param {?function(retries: number, err: any):boolean} predicate
+   * the predicate called with the resubscription count and the failure
+   * value and should return true if a resubscription should happen.
    * @returns {Single}
    */
   retry(predicate) {
