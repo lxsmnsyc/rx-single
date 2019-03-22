@@ -25,6 +25,7 @@ function subscribeActual(observer) {
     amount,
     'Single.timeout: TimeoutException (no success signals within the specified timeout).',
   );
+
   onSubscribe(disposable);
 
   this.source.subscribeWith({
