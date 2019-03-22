@@ -41,7 +41,7 @@ import {
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
-  timeout, zipWith, zip, doOnSubscribe, ambWith, amb, doOnTerminate, cache,
+  timeout, zipWith, zip, doOnSubscribe, ambWith, amb, doOnTerminate, cache, delaySubscription,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -191,6 +191,10 @@ export default class Single {
    */
   delay(amount, doDelayError) {
     return delay(this, amount, doDelayError);
+  }
+
+  delaySubscription(amount) {
+    return delaySubscription(this, amount);
   }
 
   /**
