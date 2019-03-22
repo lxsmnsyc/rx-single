@@ -1,13 +1,12 @@
-import { disposed } from '../utils';
 import Single from '../../single';
 import { error } from '../operators';
+import { immediateSuccess } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  observer.onSubscribe(disposed);
-  observer.onSuccess(this.value);
+  immediateSuccess(observer, this.value);
 }
 /**
  * @ignore
