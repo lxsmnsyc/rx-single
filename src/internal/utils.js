@@ -120,6 +120,9 @@ export class SimpleDisposable {
   }
 }
 
+/**
+ * @ignore
+ */
 export class CompositeDisposable {
   constructor() {
     this.set = [];
