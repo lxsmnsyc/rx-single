@@ -42,9 +42,9 @@ import {
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
-  doOnTerminate, cache, delaySubscription, delayUntil, merge, flatMap, retry, compose,
+  doOnTerminate, cache, delaySubscription, delayUntil, merge, flatMap, retry, compose, lift,
 } from './internal/operators';
-import { SimpleDisposable } from './internal/utils';
+import { SimpleDisposable, isObserver } from './internal/utils';
 
 /**
  * The Single class implements the Reactive Pattern
@@ -495,6 +495,43 @@ export default class Single {
   }
 
   /**
+   * This method requires advanced knowledge about building
+   * operators, please consider other standard composition
+   * methods first; Returns a Single which, when subscribed
+   * to, invokes the operator function for each individual
+   * downstream Single and allows the insertion of a custom
+   * operator by accessing the downstream's Observer during
+   * this subscription phase and providing a new Observer,
+   * containing the custom operator's intended business logic,
+   * that will be used in the subscription process going
+   * further upstream.
+   *
+   * Generally, such a new Observer will wrap the downstream's
+   * Observer and forwards the onSuccess and onError events
+   * from the upstream directly or according to the emission
+   * pattern the custom operator's business logic requires.
+   * In addition, such operator can intercept the flow control
+   * calls of dispose and isDisposed that would have traveled
+   * upstream and perform additional actions depending on the
+   * same business logic requirements.
+   *
+   * Note that implementing custom operators via this lift()
+   * method adds slightly more overhead by requiring an additional
+   * allocation and indirection per assembled flows. Instead,
+   * using compose() method and  creating a transformer function
+   * with it is recommended.
+   *
+   * @param {!function(observer: Observer):Observer} operator
+   * the function that receives the downstream's SingleObserver
+   * and should return a SingleObserver with custom behavior
+   * to be used as the consumer for the current Single.
+   * @returns {Single}
+   */
+  lift(operator) {
+    return lift(this, operator);
+  }
+
+  /**
    * Returns a Single that applies a specified function
    * to the item emitted by the source Single and emits
    * the result of this function application.
@@ -650,7 +687,9 @@ export default class Single {
    * @returns {undefined}
    */
   subscribeWith(observer) {
-    this.subscribeActual(observer);
+    if (isObserver(observer)) {
+      this.subscribeActual(observer);
+    }
   }
 
   /**
