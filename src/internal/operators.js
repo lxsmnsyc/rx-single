@@ -27,6 +27,7 @@ export { default as fromCallable } from './operators/fromCallable';
 export { default as fromPromise } from './operators/fromPromise';
 export { default as fromResolvable } from './operators/fromResolvable';
 export { default as just } from './operators/just';
+export { default as lift } from './operators/lift';
 export { default as map } from './operators/map';
 export { default as merge } from './operators/merge';
 export { default as onErrorResumeNext } from './operators/onErrorResumeNext';
