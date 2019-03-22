@@ -25,12 +25,22 @@
  * @author Alexis Munsayac <alexis.munsayac@gmail.com>
  * @copyright Alexis Munsayac 2019
  */
+
+/**
+ * @external {Iterable} https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols
+ */
+/**
+ * @external {Thennable} https://promisesaplus.com/
+ */
+/**
+ * @external {PromiseLike} https://promisesaplus.com/
+ */
 import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
-  onErrorResumeNext, onErrorReturnItem, onErrorReturn, timeout, zipWith, zip,
+  onErrorResumeNext, onErrorReturnItem, onErrorReturn, timeout, zipWith, zip, doOnSubscribe,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -201,6 +211,20 @@ export default class Single {
    */
   doOnEvent(callable) {
     return doOnEvent(this, callable);
+  }
+
+  /**
+   * Calls the shared function with the Disposable
+   * sent through the onSubscribe for each Observer
+   * that subscribes to the current Single.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSubscribe.png" class="diagram">
+   *
+   * @param {!function(x: Disposable)} callable
+   * @returns {Single}
+   */
+  doOnSubscribe(callable) {
+    return doOnSubscribe(this, callable);
   }
 
   /**
