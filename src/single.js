@@ -41,7 +41,7 @@ import {
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
-  timeout, zipWith, zip, doOnSubscribe, ambWith, amb, doOnTerminate,
+  timeout, zipWith, zip, doOnSubscribe, ambWith, amb, doOnTerminate, cache,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -128,6 +128,19 @@ export default class Single {
    */
   ambWith(other) {
     return ambWith(this, other);
+  }
+
+  /**
+   * Stores the success value or exception from the
+   * current Single and replays it to late Observers.
+   *
+   * The returned Single subscribes to the current Single
+   * when the first SingleObserver subscribes.
+   *
+   * @returns {Single}
+   */
+  cache() {
+    return cache(this);
   }
 
   /**
