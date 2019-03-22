@@ -11,13 +11,20 @@ function subscribeActual(observer) {
 
   const disposable = new SimpleDisposable(callable);
 
+  onSubscribe(disposable);
+
   source.subscribeWith({
     onSubscribe(d) {
       disposable.setDisposable(d);
-      onSubscribe(disposable);
     },
-    onSuccess,
-    onError,
+    onSuccess(x) {
+      onSuccess(x);
+      disposable.dispose();
+    },
+    onError(x) {
+      onError(x);
+      disposable.dispose();
+    },
   });
 }
 
