@@ -28,7 +28,7 @@ describe('Single', () => {
     /**
      *
      */
-    it('should signal success from the source (if earlier).', (done) => {
+    it('should signal success from the source (if earlier)', (done) => {
       const single = Single.just('Hello').ambWith(Single.timer(100));
       single.subscribe(
         x => (x === 'Hello' ? done() : done(x)),
