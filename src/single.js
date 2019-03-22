@@ -42,7 +42,8 @@ import {
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
-  doOnTerminate, cache, delaySubscription, delayUntil, merge, flatMap, retry, compose, lift,
+  doOnTerminate, cache, delaySubscription, delayUntil,
+  merge, flatMap, retry, compose, lift, takeUntil,
 } from './internal/operators';
 import { SimpleDisposable, isObserver } from './internal/utils';
 
@@ -720,6 +721,26 @@ export default class Single {
       onError,
     });
     return disposable;
+  }
+
+  /**
+   * Returns a Single that emits the item emitted by
+   * the source Single until a second Single emits an
+   * item. Upon emission of an item from other,
+   * this will emit an error rather than go to
+   * Observer.onSuccess.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/takeUntil.png" class="diagram">
+   *
+   * @param {Single} other
+   * the Single whose emitted item will cause takeUntil
+   * to emit the item from the source Single
+   * @returns {Single}
+   * a Single that emits the item emitted by the source
+   * Single until such time as other emits its item
+   */
+  takeUntil(other) {
+    return takeUntil(this, other);
   }
 
   /**
