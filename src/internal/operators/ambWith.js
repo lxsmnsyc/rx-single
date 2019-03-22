@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { SimpleDisposable, isDisposable } from '../utils';
+import { CompositeDisposable } from '../utils';
 
 /**
  * @ignore
@@ -7,17 +7,7 @@ import { SimpleDisposable, isDisposable } from '../utils';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  let DA;
-  let DB;
-
-  const disposable = new SimpleDisposable(() => {
-    if (isDisposable(DA)) {
-      DA.dispose();
-    }
-    if (isDisposable(DB)) {
-      DB.dispose();
-    }
-  });
+  const disposable = new CompositeDisposable();
 
   onSubscribe(disposable);
 
@@ -25,36 +15,28 @@ function subscribeActual(observer) {
 
   source.subscribeWith({
     onSubscribe(d) {
-      DA = d;
+      disposable.add(d);
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        disposable.dispose();
-        onSuccess(x);
-      }
+      onSuccess(x);
+      disposable.dispose();
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        disposable.dispose();
-        onError(x);
-      }
+      onError(x);
+      disposable.dispose();
     },
   });
   other.subscribeWith({
     onSubscribe(d) {
-      DB = d;
+      disposable.add(d);
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        disposable.dispose();
-        onSuccess(x);
-      }
+      onSuccess(x);
+      disposable.dispose();
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        disposable.dispose();
-        onError(x);
-      }
+      onError(x);
+      disposable.dispose();
     },
   });
 }
