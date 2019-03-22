@@ -5,7 +5,6 @@ import Single from '../../single';
  * @ignore
  */
 function subscribeActual(observer) {
-
   let err;
 
   try {
