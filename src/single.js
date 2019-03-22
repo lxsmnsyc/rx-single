@@ -35,7 +35,36 @@ import {
 import { SimpleDisposable } from './internal/utils';
 
 /**
+ * The Single class implements the Reactive Pattern
+ * for a single value response.
  *
+ * Single behaves similarly to Observable except that
+ * it can only emit either a single successful value
+ * or an error (there is no "onComplete" notification
+ * as there is for an Observable).
+ *
+ * The Single class default consumer type it interacts
+ * with is the Observer via the subscribeWith(Observer)
+ * or the subscribe(onSuccess, onError) method.
+ *
+ * The Single operates with the following sequential protocol:
+ * <code>onSubscribe (onSuccess | onError)?</code>
+ *
+ * Note that onSuccess and onError are mutually exclusive
+ * events; unlike Observable, onSuccess is never followed
+ * by onError.
+ *
+ * Like Observable, a running Single can be stopped through
+ * the Disposable instance provided to consumers through
+ * Observer.onSubscribe(Disposable).
+ *
+ * Singles are cold by default, but using a toPromise method,
+ * you can achieve a hot-like Single.
+ *
+ * The documentation for this class makes use of marble diagrams.
+ * The following legend explains these diagrams:
+ *
+ * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.legend.png" class="diagram">
  */
 export default class Single {
   /**
