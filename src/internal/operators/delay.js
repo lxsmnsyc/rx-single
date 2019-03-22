@@ -24,20 +24,16 @@ function subscribeActual(observer) {
       disposable.setDisposable(d);
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        timeout = setTimeout(() => {
-          disposable.dispose();
-          onSuccess(x);
-        }, amount);
-      }
+      timeout = setTimeout(() => {
+        onSuccess(x);
+        disposable.dispose();
+      }, amount);
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        timeout = setTimeout(() => {
-          disposable.dispose();
-          onError(x);
-        }, doDelayError ? amount : 0);
-      }
+      timeout = setTimeout(() => {
+        onError(x);
+        disposable.dispose();
+      }, doDelayError ? amount : 0);
     },
   });
 }
