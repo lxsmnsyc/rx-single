@@ -1,6 +1,9 @@
 import Single from '../../single';
 import { isObserver, immediateError } from '../utils';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   let result;
 
@@ -18,6 +21,9 @@ function subscribeActual(observer) {
   this.source.subscribeWith(result);
 }
 
+/**
+ * @ignore
+ */
 const lift = (source, operator) => {
   if (typeof operator !== 'function') {
     return source;
