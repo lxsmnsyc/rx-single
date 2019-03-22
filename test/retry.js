@@ -1,7 +1,6 @@
 /* eslint-disable no-undef */
 import assert from 'assert';
 import Single from '../src/single';
-import { doOnError } from '../src/internal/operators';
 
 /**
  *
