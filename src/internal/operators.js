@@ -2,6 +2,7 @@
 /**
  * @ignore
  */
+export { default as amb } from './operators/amb';
 export { default as ambWith } from './operators/ambWith';
 export { default as create } from './operators/create';
 export { default as contains } from './operators/contains';
