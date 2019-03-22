@@ -681,6 +681,50 @@ describe('Single', () => {
   /**
    *
    */
+  describe('#doOnTerminate', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doOnTerminate(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if the method received a non-function parameter.', () => {
+      const source = Single.just('Hello');
+      const single = source.doOnTerminate();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should call the given function on success.', (done) => {
+      let called;
+      const source = Single.just('Hello');
+      const single = source.doOnTerminate(() => { called = true; });
+      single.subscribe(
+        () => called && done(),
+        () => done(false),
+      );
+    });
+    /**
+     *
+     */
+    it('should call the given function on error.', (done) => {
+      let called;
+      const source = Single.error('Hello');
+      const single = source.doOnTerminate(() => { called = true; });
+      single.subscribe(
+        () => done(false),
+        () => called && done(),
+      );
+    });
+  });
+  /**
+   *
+   */
   describe('#error', () => {
     /**
      *
@@ -1275,6 +1319,16 @@ describe('Single', () => {
     */
     it('should signal error if sources is not iterable.', (done) => {
       const single = Single.zip();
+      single.subscribe(
+        () => done(false),
+        () => done(),
+      );
+    });
+    /**
+    *
+    */
+    it('should signal error if source is empty iterable.', (done) => {
+      const single = Single.zip([]);
       single.subscribe(
         () => done(false),
         () => done(),
