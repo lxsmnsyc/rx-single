@@ -1,7 +1,9 @@
 import Single from '../../single';
 import { SimpleDisposable } from '../utils';
 
-
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
@@ -60,6 +62,9 @@ function subscribeActual(observer) {
   }
 }
 
+/**
+ * @ignore
+ */
 const cache = (source) => {
   const single = new Single();
   single.source = source;
