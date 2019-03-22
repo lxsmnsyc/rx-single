@@ -26,6 +26,12 @@ function subscribeActual(observer) {
   const { sources, zipper } = this;
 
   const size = sources.length;
+
+  if (size === 0) {
+    disposable.dispose();
+    onError('Single.zip: empty iterable');
+    return;
+  }
   let pending = size;
 
   for (let i = 0; i < size; i += 1) {
