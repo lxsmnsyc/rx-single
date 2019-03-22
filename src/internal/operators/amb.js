@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { SimpleDisposable, isDisposable, isIterable } from '../utils';
+import { isIterable, CompositeDisposable } from '../utils';
 import { error } from '../operators';
 
 /**
@@ -8,16 +8,7 @@ import { error } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const composite = [];
-
-  const disposable = new SimpleDisposable(() => {
-    // eslint-disable-next-line no-restricted-syntax
-    for (const d of composite) {
-      if (isDisposable(d)) {
-        d.dispose();
-      }
-    }
-  });
+  const disposable = new CompositeDisposable();
 
   onSubscribe(disposable);
 
@@ -34,25 +25,21 @@ function subscribeActual(observer) {
     if (single instanceof Single) {
       single.subscribeWith({
         onSubscribe(d) {
-          composite[i] = d;
+          disposable.add(d);
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
-          if (!disposable.isDisposed()) {
-            disposable.dispose();
-            onSuccess(x);
-          }
+          onSuccess(x);
+          disposable.dispose();
         },
         onError(x) {
-          if (!disposable.isDisposed()) {
-            disposable.dispose();
-            onError(x);
-          }
+          onError(x);
+          disposable.dispose();
         },
       });
     } else {
-      disposable.dispose();
       onError('Single.zip: One of the sources is a non-Single.');
+      disposable.dispose();
       break;
     }
   }
