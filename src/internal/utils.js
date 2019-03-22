@@ -13,13 +13,6 @@ export const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.it
 /**
  * @ignore
  */
-export const disposed = {
-  dispose: () => {},
-  isDisposed: () => true,
-};
-/**
- * @ignore
- */
 export const neverDisposed = {
   dispose: () => {},
   isDisposed: () => false,
@@ -86,8 +79,17 @@ export class SimpleDisposable {
     }
   }
 
+  fire() {
+    const { onDispose } = this;
+    this.state = DISPOSED;
+    if (typeof onDispose === 'function') {
+      onDispose();
+    }
+    this.onDispose = undefined;
+  }
+
   dispose() {
-    const { state, onDispose } = this;
+    const { state } = this;
 
     if (state === DISPOSED) {
       return;
@@ -96,18 +98,12 @@ export class SimpleDisposable {
     if (isDisposable(state)) {
       if (!state.isDisposed()) {
         this.state.dispose();
-        if (state.isDisposed()) {
-          this.state = DISPOSED;
-          if (typeof onDispose === 'function') {
-            onDispose();
-          }
-        }
+      }
+      if (state.isDisposed()) {
+        this.fire();
       }
     } else {
-      this.state = DISPOSED;
-      if (typeof onDispose === 'function') {
-        onDispose();
-      }
+      this.fire();
     }
   }
 
@@ -115,7 +111,7 @@ export class SimpleDisposable {
     const { state } = this;
     if (isDisposable(state)) {
       if (state.isDisposed()) {
-        this.state = DISPOSED;
+        this.fire();
         return true;
       }
       return false;
@@ -155,3 +151,27 @@ export class CompositeDisposable {
     return this.disposed === DISPOSED;
   }
 }
+/**
+ * @ignore
+ */
+export const immediateSuccess = (o, x) => {
+  const disposable = new SimpleDisposable();
+  o.onSubscribe(disposable);
+
+  if (!disposable.isDisposed()) {
+    o.onSuccess(x);
+    disposable.dispose();
+  }
+};
+/**
+ * @ignore
+ */
+export const immediateError = (o, x) => {
+  const disposable = new SimpleDisposable();
+  o.onSubscribe(disposable);
+
+  if (!disposable.isDisposed()) {
+    o.onError(x);
+    disposable.dispose();
+  }
+};
