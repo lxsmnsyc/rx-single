@@ -2,6 +2,11 @@
 
 JS Implementation of the Reactive Extensions (RxJava) [Single](http://reactivex.io/documentation/single.html)
 
+[![NPM](https://nodei.co/npm/rx-single.png)](https://nodei.co/npm/rx-single/)
+
+[![](https://data.jsdelivr.com/v1/package/npm/rx-single/badge)](https://www.jsdelivr.com/package/npm/rx-single)
+[![HitCount](http://hits.dwyl.io/lxsmnsyc/rx-single.svg)](http://hits.dwyl.io/lxsmnsyc/rx-single)
+
 | Platform | Build Status |
 | --- | --- |
 | Linux | [![Build Status](https://travis-ci.org/LXSMNSYC/rx-single.svg?branch=master)](https://travis-ci.org/LXSMNSYC/rx-single) |
@@ -9,6 +14,7 @@ JS Implementation of the Reactive Extensions (RxJava) [Single](http://reactivex.
 
 
 [![codecov](https://codecov.io/gh/LXSMNSYC/rx-single/branch/master/graph/badge.svg)](https://codecov.io/gh/LXSMNSYC/rx-single)
+[![Known Vulnerabilities](https://snyk.io/test/github/LXSMNSYC/rx-single/badge.svg?targetFile=package.json)](https://snyk.io/test/github/LXSMNSYC/rx-single?targetFile=package.json)
 
 ## Install
 
