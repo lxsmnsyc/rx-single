@@ -501,12 +501,48 @@ describe('Single', () => {
   /**
    *
    */
+  describe('#doOnSubscribe', () => {
+    /**
+     *
+     */
+    it('should create a Single', () => {
+      const single = Single.just('Hello').doOnSubscribe(() => {});
+      assert(single instanceof Single);
+    });
+    /**
+     *
+     */
+    it('should return the same instance if no function is passed', () => {
+      const source = Single.just('Hello');
+      const single = source.doOnSubscribe();
+      assert(source === single);
+    });
+    /**
+     *
+     */
+    it('should be called before actual subscription.', (done) => {
+      let called;
+      const single = Single.just('Hello').doOnSubscribe(() => { called = true; });
+      single.subscribeWith({
+        onSubscribe() {
+          if (called) {
+            done();
+          } else {
+            done(false);
+          }
+        },
+      });
+    });
+  });
+  /**
+   *
+   */
   describe('#doOnSuccess', () => {
     /**
      *
      */
     it('should create a Single', () => {
-      const single = Single.just('Hello').doAfterSuccess(() => {});
+      const single = Single.just('Hello').doOnSuccess(() => {});
       assert(single instanceof Single);
     });
     /**
@@ -972,6 +1008,15 @@ describe('Single', () => {
         () => done(false),
       );
     });
+    /**
+     *
+     */
+    it('should never be disposable.', () => {
+      const single = Single.never();
+      const disposable = single.subscribe();
+      disposable.dispose();
+      assert(!disposable.isDisposed());
+    });
   });
   /**
    *
@@ -1230,9 +1275,6 @@ describe('Single', () => {
         e => (e instanceof Error ? done() : done(false)),
       );
     });
-    /**
-     * 
-     */
     /**
      *
      */
