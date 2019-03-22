@@ -1222,8 +1222,22 @@ describe('Single', () => {
     /**
      *
      */
-    it('should signal an error if the zipper throws an error', (done) => {
+    it('should signal an error if the zipper returns undefined', (done) => {
       const single = Single.just('Hello').zipWith(Single.just('World'), () => undefined);
+
+      single.subscribe(
+        () => done(false),
+        e => (e instanceof Error ? done() : done(false)),
+      );
+    });
+    /**
+     * 
+     */
+    /**
+     *
+     */
+    it('should signal an error if the zipper returns undefined', (done) => {
+      const single = Single.just('Hello').delay(100).zipWith(Single.just('World'), () => undefined);
 
       single.subscribe(
         () => done(false),
