@@ -1,6 +1,9 @@
 import Single from '../../single';
 import { SimpleDisposable } from '../utils';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
@@ -41,6 +44,9 @@ function subscribeActual(observer) {
   sub();
 }
 
+/**
+ * @ignore
+ */
 const retry = (source, bipredicate) => {
   const single = new Single();
   single.source = source;
