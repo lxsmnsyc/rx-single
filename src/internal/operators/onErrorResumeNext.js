@@ -8,10 +8,11 @@ function subscribeActual(observer) {
 
   const disposable = new SimpleDisposable();
 
+  onSubscribe(disposable);
+
   source.subscribeWith({
     onSubscribe(d) {
       disposable.setDisposable(d);
-      onSubscribe(disposable);
     },
     onSuccess,
     onError(x) {
