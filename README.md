@@ -1,5 +1,6 @@
 # rx-single
-Reactive Extensions - Represents an asynchronous success value or an error
+
+JS Implementation of the Reactive Extensions [Single](http://reactivex.io/documentation/single.html)
 
 | Platform | Build Status |
 | --- | --- |
@@ -9,3 +10,8 @@ Reactive Extensions - Represents an asynchronous success value or an error
 
 [![codecov](https://codecov.io/gh/LXSMNSYC/rx-single/branch/master/graph/badge.svg)](https://codecov.io/gh/LXSMNSYC/rx-single)
 
+## Install
+
+## Usage
+
+## Build
