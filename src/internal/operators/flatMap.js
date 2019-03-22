@@ -1,6 +1,9 @@
 import Single from '../../single';
 import { SimpleDisposable } from '../utils';
 
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   const { onSubscribe, onError, onSuccess } = observer;
 
@@ -38,6 +41,9 @@ function subscribeActual(observer) {
   });
 }
 
+/**
+ * @ignore
+ */
 const flatMap = (source, mapper) => {
   if (typeof mapper !== 'function') {
     return source;
