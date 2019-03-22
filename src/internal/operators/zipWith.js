@@ -54,8 +54,10 @@ function subscribeActual(observer) {
       }
     },
     onError(x) {
-      disposable.dispose();
-      onError(x);
+      if (!disposable.isDisposed()) {
+        disposable.dispose();
+        onError(x);
+      }
     },
   });
 
@@ -85,8 +87,10 @@ function subscribeActual(observer) {
       }
     },
     onError(x) {
-      disposable.dispose();
-      onError(x);
+      if (!disposable.isDisposed()) {
+        disposable.dispose();
+        onError(x);
+      }
     },
   });
 }
