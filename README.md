@@ -1,6 +1,6 @@
 # rx-single
 
-JS Implementation of the Reactive Extensions [Single](http://reactivex.io/documentation/single.html)
+JS Implementation of the Reactive Extensions (RxJava) [Single](http://reactivex.io/documentation/single.html)
 
 | Platform | Build Status |
 | --- | --- |
