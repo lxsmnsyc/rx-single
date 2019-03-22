@@ -42,7 +42,7 @@ import {
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
-  doOnTerminate, cache, delaySubscription, delayUntil, merge, flatMap, retry,
+  doOnTerminate, cache, delaySubscription, delayUntil, merge, flatMap, retry, compose,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -142,6 +142,28 @@ export default class Single {
    */
   cache() {
     return cache(this);
+  }
+
+  /**
+   * Transform a Single by applying a particular Transformer
+   * function to it.
+   *
+   * This method operates on the Single itself whereas #lift
+   * operates on the Single's Observers.
+   *
+   * If the operator you are creating is designed to act on
+   * the individual item emitted by a Single, use lift.
+   *
+   * If your operator is designed to transform the source Single
+   * as a whole (for instance, by applying a particular set of
+   * existing operators to it) use compose.
+   *
+   * @param {!function(source: Single):Single} transformer
+   * @returns {Single}
+   * the source Single, transformed by the transformer function
+   */
+  compose(transformer) {
+    return compose(this, transformer);
   }
 
   /**
