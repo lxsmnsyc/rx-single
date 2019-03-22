@@ -42,7 +42,7 @@ import {
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
-  doOnTerminate, cache, delaySubscription, delayUntil,
+  doOnTerminate, cache, delaySubscription, delayUntil, merge, flatMap, retry,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -194,10 +194,32 @@ export default class Single {
     return delay(this, amount, doDelayError);
   }
 
+  /**
+   * Delays the actual subscription to the current
+   * Single until the given time delay elapsed.
+   *
+   * @param {!Number} amount
+   * the time amount to wait with the subscription
+   * (in milliseconds).
+   * @returns {Single}
+   */
   delaySubscription(amount) {
     return delaySubscription(this, amount);
   }
 
+  /**
+   * Delays the actual subscription to the current Single
+   * until the given other SingleSource signals success.
+   *
+   * If the delaying source signals an error, that error is
+   * re-emitted and no subscription to the current Single
+   * happens.
+   *
+   * @param {!Single} other
+   * the Single that has to complete before the subscription
+   * to the current Single happens.
+   * @returns {Single}
+   */
   delayUntil(other) {
     return delayUntil(this, other);
   }
@@ -335,7 +357,7 @@ export default class Single {
    * This differs from doAfterTerminate in that this happens
    * before the onComplete or onError notification.
    *
-   * @param {Function} callable
+   * @param {!Function} callable
    * the action to invoke when the consumer calls
    * onComplete or onError
    * @returns {Single}
@@ -365,6 +387,22 @@ export default class Single {
    */
   static error(err) {
     return error(err);
+  }
+
+  /**
+   * Returns a Single that is based on applying a specified
+   * function to the item emitted by the source Single, where
+   * that function returns a Single.
+   *
+   * @param {!function(x: any):Single} mapper
+   * a function that, when applied to the item emitted by the
+   * source Single, returns a SingleSource
+   * @returns {Single}
+   * the Single returned from mapper when applied to the item
+   * emitted by the source Single
+   */
+  flatMap(mapper) {
+    return flatMap(this, mapper);
   }
 
   /**
@@ -452,6 +490,23 @@ export default class Single {
   }
 
   /**
+   * Flattens a Single that emits a Single into a single Single
+   * that emits the item emitted by the nested Single, without
+   * any transformation.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/merge.oo.png" class="diagram">
+   *
+   * @param {!Single} source
+   * a Single that emits a Single
+   * @returns {Single
+   * a Single that emits the item that is the result of flattening
+   * the Single emitted by source.
+   */
+  static merge(source) {
+    return merge(source);
+  }
+
+  /**
    * Returns a singleton instance of a never-signalling
    * Single (only calls onSubscribe).
    *
@@ -518,7 +573,7 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.onErrorReturn.png" class="diagram">
    *
-   * @param {!Function} resumeFunction
+   * @param {!function(e: any):any} resumeFunction
    * a function that returns an item that the new Single
    * will emit if the source Single encounters an error
    * @returns {Single}
@@ -532,12 +587,26 @@ export default class Single {
    * Signals the specified value as success in case
    * the current Single signals an error.
    *
-   * @param {any} item
+   * @param {!any} item
    * the value to signal if the current Single fails
    * @returns {Single}
    */
   onErrorReturnItem(item) {
     return onErrorReturnItem(this, item);
+  }
+
+  /**
+   * Re-subscribe to the current Single if the given predicate
+   * returns true when the Single fails with an onError.
+   *
+   * If no predicate is provided, repeatedly re-subscribes to
+   * the current Single indefinitely if it fails with an onError.
+   *
+   * @param {?function(retries: number, err: any):boolean} predicate
+   * @returns {Single}
+   */
+  retry(predicate) {
+    return retry(this, predicate);
   }
 
   /**
@@ -627,7 +696,7 @@ export default class Single {
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.zip.png" class="diagram">
    *
-   * @param {Iterable} sources
+   * @param {!Iterable} sources
    * the Iterable sequence of SingleSource instances.
    * An empty sequence will result in an onError signal
    * of NoSuchElementException.
