@@ -15,14 +15,13 @@ function subscribeActual(observer) {
       clearTimeout(timeout);
     }
   });
+
   onSubscribe(disposable);
 
-  const { amount } = this;
-
   timeout = setTimeout(() => {
-    disposable.dispose();
     onSuccess(0);
-  }, amount);
+    disposable.dispose();
+  }, this.amount);
 }
 /**
  * @ignore
