@@ -13,6 +13,10 @@ export const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.it
 /**
  * @ignore
  */
+export const isObserver = obj => typeof obj === 'object' && typeof obj.onSubscribe === 'function';
+/**
+ * @ignore
+ */
 export const neverDisposed = {
   dispose: () => {},
   isDisposed: () => false,
