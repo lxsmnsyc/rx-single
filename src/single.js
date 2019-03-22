@@ -30,7 +30,7 @@ import {
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
-  onErrorResumeNext, onErrorReturnItem, onErrorReturn, timeout,
+  onErrorResumeNext, onErrorReturnItem, onErrorReturn, timeout, zipWith, zip,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -388,6 +388,30 @@ export default class Single {
    */
   timeout(amount) {
     return timeout(this, amount);
+  }
+
+  /**
+   * Waits until all Single sources provided via an iterable signal a
+   * success value and calls a zipper function with an array of these
+   * values to return a result to be emitted to downstream.
+   * @param {Iterable} sources
+   * @param {?Function} zipper
+   * @returns {Single}
+   */
+  static zip(sources, zipper) {
+    return zip(sources, zipper);
+  }
+
+  /**
+   * Returns a Single that emits the result of applying a specified
+   * function to the pair of items emitted by the source Single and
+   * another specified Single.
+   * @param {!Single} other
+   * @param {?Function} zipper
+   * @returns {Single}
+   */
+  zipWith(other, zipper) {
+    return zipWith(this, other, zipper);
   }
 
   /**
