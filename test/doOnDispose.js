@@ -29,12 +29,12 @@ describe('Single', () => {
      *
      */
     it('should call the given function on dispose.', (done) => {
-      const source = Single.just('Hello');
+      const source = Single.just('Hello').delay(100);
       const single = source.doOnDispose(() => done());
 
       const disposable = single.subscribe(
-        () => done(false),
-        () => done(false),
+        done,
+        done,
       );
       disposable.dispose();
     });
