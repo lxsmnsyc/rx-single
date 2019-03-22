@@ -4,10 +4,10 @@
  * an Emitter.
  */
 // eslint-disable-next-line no-unused-vars
-class Observer {
+export default class Observer {
   /**
    * Receives the disposable subscription.
-   * @params {Disposable} d
+   * @param {!Disposable} d
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
@@ -15,6 +15,7 @@ class Observer {
 
   /**
    * Receives a success value.
+   * @param {!any} value
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
@@ -22,6 +23,7 @@ class Observer {
 
   /**
    * Receives an error value.
+   * @param {!any} err
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
