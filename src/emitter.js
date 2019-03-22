@@ -6,9 +6,10 @@
  * Emitter is an abstraction layer of the Observer
  */
 // eslint-disable-next-line no-unused-vars
-class Emitter {
+export default class Emitter {
   /**
    * Emits a success value.
+   * @param {!any} value
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
@@ -16,6 +17,7 @@ class Emitter {
 
   /**
    * Emits an error value.
+   * @param {!any} err
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
@@ -23,7 +25,7 @@ class Emitter {
 
   /**
    * Sets the Disposable for this instance
-   * @param {Disposable} d
+   * @param {!Disposable} d
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
