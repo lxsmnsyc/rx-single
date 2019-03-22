@@ -10,6 +10,7 @@ export { default as contains } from './operators/contains';
 export { default as defer } from './operators/defer';
 export { default as delay } from './operators/delay';
 export { default as delaySubscription } from './operators/delaySubscription';
+export { default as delayUntil } from './operators/delayUntil';
 export { default as doAfterSuccess } from './operators/doAfterSuccess';
 export { default as doAfterTerminate } from './operators/doAfterTerminate';
 export { default as doFinally } from './operators/doFinally';
