@@ -41,7 +41,7 @@ import {
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnDispose, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
-  timeout, zipWith, zip, doOnSubscribe, ambWith,
+  timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
 } from './internal/operators';
 import { SimpleDisposable } from './internal/utils';
 
@@ -97,12 +97,25 @@ export default class Single {
   }
 
   /**
+   * Runs multiple SingleSources and signals the events of
+   * the first one that signals (disposing the rest).
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.amb.png" class="diagram">
+   *
+   * @param {!Iterable} sources
+   * @returns {Single}
+   */
+  static amb(sources) {
+    return amb(sources);
+  }
+
+  /**
    * Signals the event of this or the other Single whichever
    * signals first.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.ambWith.png" class="diagram">
    *
-   * @param {Single} other
+   * @param {!Single} other
    * @returns {Single}
    */
   ambWith(other) {
