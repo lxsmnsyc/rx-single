@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { SimpleDisposable, isDisposable } from '../utils';
+import { CompositeDisposable } from '../utils';
 
 /**
  * @ignore
@@ -11,19 +11,10 @@ const defaultZipper = (x, y) => [x, y];
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  let DA;
-  let DB;
   let SA;
   let SB;
 
-  const disposable = new SimpleDisposable(() => {
-    if (isDisposable(DA)) {
-      DA.dispose();
-    }
-    if (isDisposable(DB)) {
-      DB.dispose();
-    }
-  });
+  const disposable = new CompositeDisposable();
 
   onSubscribe(disposable);
 
@@ -31,39 +22,42 @@ function subscribeActual(observer) {
 
   source.subscribeWith({
     onSubscribe(d) {
-      DA = d;
+      disposable.add(d);
     },
     onSuccess(x) {
-      SA = x;
+      if (!disposable.isDisposed()) {
+        SA = x;
 
-      if (typeof SB !== 'undefined') {
-        disposable.dispose();
-        let result;
+        if (typeof SB !== 'undefined') {
+          let result;
 
-        try {
-          result = zipper(SA, SB);
+          try {
+            result = zipper(SA, SB);
 
-          if (typeof result === 'undefined') {
-            throw new Error('Single.zipWith: zipper function returned an undefined value.');
+            if (typeof result === 'undefined') {
+              throw new Error('Single.zipWith: zipper function returned an undefined value.');
+            }
+          } catch (e) {
+            onError(e);
+            disposable.dispose();
+            return;
           }
-        } catch (e) {
-          onError(e);
-          return;
+          onSuccess(result);
+          disposable.dispose();
         }
-        onSuccess(result);
       }
     },
     onError(x) {
       if (!disposable.isDisposed()) {
-        disposable.dispose();
         onError(x);
+        disposable.dispose();
       }
     },
   });
 
   other.subscribeWith({
     onSubscribe(d) {
-      DB = d;
+      disposable.add(d);
     },
     onSuccess(x) {
       if (!disposable.isDisposed()) {
@@ -80,16 +74,18 @@ function subscribeActual(observer) {
             }
           } catch (e) {
             onError(e);
+            disposable.dispose();
             return;
           }
           onSuccess(result);
+          disposable.dispose();
         }
       }
     },
     onError(x) {
       if (!disposable.isDisposed()) {
-        disposable.dispose();
         onError(x);
+        disposable.dispose();
       }
     },
   });
