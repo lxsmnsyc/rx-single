@@ -9,13 +9,9 @@ function subscribeActual(observer) {
 
   const { amount } = this;
 
-  let parent;
   let timeout;
 
   const disposable = new SimpleDisposable(() => {
-    if (typeof parent !== 'undefined') {
-      parent.dispose();
-    }
     if (typeof timeout !== 'undefined') {
       clearTimeout(timeout);
     }
@@ -26,15 +22,15 @@ function subscribeActual(observer) {
   timeout = setTimeout(() => {
     this.source.subscribeWith({
       onSubscribe(d) {
-        parent = d;
+        disposable.setDisposable(d);
       },
       onSuccess(x) {
-        disposable.dispose();
         onSuccess(x);
+        disposable.dispose();
       },
       onError(x) {
-        disposable.dispose();
         onError(x);
+        disposable.dispose();
       },
     });
   }, amount);
