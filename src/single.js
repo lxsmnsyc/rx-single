@@ -400,7 +400,7 @@ export default class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.png" class="diagram">
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
    *
-   * @param {!(function():any|any)} err
+   * @param {!(function():Error|Error)} err
    * - the callable that is called for each individual
    * Observer and returns or throws a value to be emitted.
    * - the particular value to pass to onError
