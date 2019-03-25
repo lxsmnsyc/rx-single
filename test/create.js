@@ -80,7 +80,7 @@ describe('Single', () => {
 
       single.subscribe(
         () => done(false),
-        x => (x === 'Expected' ? done() : done(false)),
+        e => (e instanceof Error ? done() : done(e)),
       );
     });
   });
