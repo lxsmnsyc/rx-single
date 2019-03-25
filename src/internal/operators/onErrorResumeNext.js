@@ -1,8 +1,8 @@
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
+import { SimpleDisposable, cleanObserver } from '../utils';
 
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, resumeIfError } = this;
 
@@ -25,7 +25,7 @@ function subscribeActual(observer) {
             throw new Error('Single.onErrorResumeNext: returned an non-Single.');
           }
         } catch (e) {
-          onError([x, e]);
+          onError(new Error([x, e]));
           return;
         }
       } else {
