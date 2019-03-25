@@ -1,7 +1,8 @@
 import Single from '../../single';
+import { cleanObserver } from '../utils';
 
 function subscribeActual(observer) {
-  const { onSuccess, onSubscribe } = observer;
+  const { onSuccess, onSubscribe } = cleanObserver(observer);
 
   const { source, item } = this;
 
