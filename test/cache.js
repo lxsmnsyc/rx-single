@@ -26,12 +26,12 @@ describe('Single', () => {
 
       setTimeout(() => {
         single.subscribe(
-          (x) => { flag = x === 'Hello World'; },
+          () => { flag = true; },
           done,
         );
         setTimeout(() => {
           single.subscribe(
-            x => (flag && x === 'Hello World' ? done() : done(x)),
+            x => (flag ? done() : done(x)),
             done,
           );
         }, 100);
@@ -42,18 +42,18 @@ describe('Single', () => {
      */
     it('should signal cached error value', (done) => {
       let flag;
-      const single = Single.error('Hello World').delay(100).cache();
+      const single = Single.error(new Error('Hello')).delay(100).cache();
 
       setTimeout(() => {
         single.subscribe(
           done,
-          (x) => { flag = x === 'Hello World'; },
+          () => { flag = true; },
         );
 
         setTimeout(() => {
           single.subscribe(
             done,
-            x => (flag && x === 'Hello World' ? done() : done(x)),
+            e => (flag && e instanceof Error ? done() : done(e)),
           );
         }, 100);
       }, 200);
