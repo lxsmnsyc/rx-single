@@ -27,7 +27,7 @@ function subscribeActual(observer) {
  */
 const fromPromise = (promise) => {
   if (!isPromise(promise)) {
-    return error('Single.fromPromise: expects a Promise-like value.');
+    return error(new Error('Single.fromPromise: expects a Promise-like value.'));
   }
   const single = new Single();
   single.promise = promise;
