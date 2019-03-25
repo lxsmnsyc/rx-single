@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { CompositeDisposable } from '../utils';
+import { CompositeDisposable, cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -9,7 +9,7 @@ const defaultZipper = (x, y) => [x, y];
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   let SA;
   let SB;
