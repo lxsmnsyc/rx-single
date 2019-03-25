@@ -14,7 +14,7 @@ describe('Single', () => {
      *
      */
     it('should create a Single', () => {
-      const single = Single.error('Hello').retry(x => x === 3);
+      const single = Single.error(new Error('Hello')).retry(x => x === 3);
 
       assert(single instanceof Single);
     });
@@ -34,7 +34,7 @@ describe('Single', () => {
      */
     it('should retry if there is an error and if it passes the predicate', (done) => {
       let retried;
-      const single = Single.error('Hello').retry((x) => {
+      const single = Single.error(new Error('Hello')).retry((x) => {
         if (x === 2) {
           retried = true;
         }
@@ -50,7 +50,7 @@ describe('Single', () => {
      *
      */
     it('should signal an error if predicate is false', (done) => {
-      const single = Single.error('Hello').retry(x => x === 3);
+      const single = Single.error(new Error('Hello')).retry(x => x === 3);
 
       single.subscribe(
         () => done(false),
