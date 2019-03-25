@@ -1,11 +1,11 @@
 import Single from '../../single';
-import { immediateError } from '../utils';
+import { immediateError, cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   let result;
 
@@ -13,7 +13,7 @@ function subscribeActual(observer) {
   try {
     result = this.supplier();
     if (!(result instanceof Single)) {
-      err = 'Single.defer: supplier returned a non-Single.';
+      throw new Error('Single.defer: supplier returned a non-Single.');
     }
   } catch (e) {
     err = e;
