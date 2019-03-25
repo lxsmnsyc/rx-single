@@ -1,11 +1,11 @@
 import Single from '../../single';
-import { CompositeDisposable } from '../utils';
+import { CompositeDisposable, cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const disposable = new CompositeDisposable();
 
