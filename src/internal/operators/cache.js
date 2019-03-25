@@ -1,11 +1,11 @@
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
+import { SimpleDisposable, cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const {
     source, cached, observers, subscribed,
