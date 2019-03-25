@@ -31,7 +31,7 @@ describe('Single', () => {
     it('should signal success from the source (if earlier)', (done) => {
       const single = Single.just('Hello').ambWith(Single.timer(100));
       single.subscribe(
-        x => (x === 'Hello' ? done() : done(x)),
+        () => done(),
         done,
       );
     });
@@ -41,7 +41,7 @@ describe('Single', () => {
     it('should signal success from the other (if earlier).', (done) => {
       const single = Single.timer(100).ambWith(Single.just('Hello'));
       single.subscribe(
-        x => (x === 'Hello' ? done() : done(x)),
+        () => done(),
         done,
       );
     });
@@ -49,20 +49,20 @@ describe('Single', () => {
      *
      */
     it('should signal error from the source (if earlier).', (done) => {
-      const single = Single.error('Hello').ambWith(Single.timer(100));
+      const single = Single.error(new Error('Hello')).ambWith(Single.timer(100));
       single.subscribe(
         done,
-        x => (x === 'Hello' ? done() : done(x)),
+        e => (e instanceof Error ? done() : done(false)),
       );
     });
     /**
      *
      */
     it('should signal error from the other (if earlier).', (done) => {
-      const single = Single.timer(100).ambWith(Single.error('Hello'));
+      const single = Single.timer(100).ambWith(Single.error(new Error('Hello')));
       single.subscribe(
         done,
-        x => (x === 'Hello' ? done() : done(x)),
+        e => (e instanceof Error ? done() : done(false)),
       );
     });
   });
