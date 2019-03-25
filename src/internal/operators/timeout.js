@@ -1,11 +1,11 @@
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
+import { SimpleDisposable, cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount } = this;
 
@@ -23,7 +23,7 @@ function subscribeActual(observer) {
   timeout = setTimeout(
     err,
     amount,
-    'Single.timeout: TimeoutException (no success signals within the specified timeout).',
+    new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'),
   );
 
   onSubscribe(disposable);
