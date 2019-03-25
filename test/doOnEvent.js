@@ -42,7 +42,7 @@ describe('Single', () => {
      */
     it('should call the given function on error.', (done) => {
       let called;
-      const source = Single.error('Hello');
+      const source = Single.error(new Error('Hello'));
       const single = source.doOnEvent(() => { called = true; });
       single.subscribe(
         () => done(false),
