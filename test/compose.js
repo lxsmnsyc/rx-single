@@ -34,7 +34,7 @@ describe('Single', () => {
       const single = Single.just('Hello').compose(source => source.map(x => `${x} World`));
 
       single.subscribe(
-        x => (x === 'Hello World' ? done() : done(false)),
+        x => (x === 'Hello World' ? done() : done(x)),
         done,
       );
     });
