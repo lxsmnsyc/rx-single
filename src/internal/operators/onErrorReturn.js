@@ -1,7 +1,8 @@
 import Single from '../../single';
+import { cleanObserver } from '../utils';
 
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, item } = this;
 
@@ -15,7 +16,7 @@ function subscribeActual(observer) {
         result = item(x);
 
         if (typeof result === 'undefined') {
-          throw new Error('Single.onErrorReturn: returned an non-Single.');
+          throw new Error(new Error('Single.onErrorReturn: returned an non-Single.'));
         }
       } catch (e) {
         onError([x, e]);
