@@ -51,8 +51,8 @@ export function onSuccessHandler(value) {
  */
 export function onErrorHandler(err) {
   let report = err;
-  if (typeof err === 'undefined') {
-    report = 'onError called with undefined value.';
+  if (!(err instanceof Error)) {
+    report = new Error('onError called with a non-Error value.');
   }
   if (this.disposable.isDisposed()) {
     return;
@@ -161,6 +161,22 @@ export class CompositeDisposable {
 /**
  * @ignore
  */
+const identity = x => x;
+/**
+ * @ignore
+ */
+const throwError = (x) => { throw x; };
+/**
+ * @ignore
+ */
+export const cleanObserver = x => ({
+  onSubscribe: x.onSubscribe,
+  onSuccess: typeof x.onSuccess === 'function' ? x.onSuccess : identity,
+  onError: typeof x.onError === 'function' ? x.onError : throwError,
+});
+/**
+ * @ignore
+ */
 export const immediateSuccess = (o, x) => {
   const disposable = new SimpleDisposable();
   o.onSubscribe(disposable);
@@ -174,11 +190,12 @@ export const immediateSuccess = (o, x) => {
  * @ignore
  */
 export const immediateError = (o, x) => {
+  const { onSubscribe, onError } = cleanObserver(o);
   const disposable = new SimpleDisposable();
-  o.onSubscribe(disposable);
+  onSubscribe(disposable);
 
   if (!disposable.isDisposed()) {
-    o.onError(x);
+    onError(x);
     disposable.dispose();
   }
 };
