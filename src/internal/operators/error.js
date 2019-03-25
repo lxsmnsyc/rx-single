@@ -11,7 +11,7 @@ function subscribeActual(observer) {
     err = this.supplier();
 
     if (typeof err === 'undefined') {
-      err = 'Single.error: Error supplier returned an undefined value.';
+      throw new Error('Single.error: Error supplier returned an undefined value.');
     }
   } catch (e) {
     err = e;
@@ -23,8 +23,8 @@ function subscribeActual(observer) {
  */
 const error = (value) => {
   let report = value;
-  if (typeof value === 'undefined') {
-    report = 'Single.error received an undefined value.';
+  if (!(value instanceof Error)) {
+    report = new Error('Single.error received a non-Error value.');
   }
 
   if (typeof value !== 'function') {
