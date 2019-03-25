@@ -1,12 +1,12 @@
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
+import { SimpleDisposable, cleanObserver } from '../utils';
 import { error } from '../operators';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onSubscribe } = observer;
+  const { onSuccess, onSubscribe } = cleanObserver(observer);
 
   let timeout;
 
@@ -30,7 +30,7 @@ function subscribeActual(observer) {
  */
 const timer = (amount) => {
   if (typeof amount !== 'number') {
-    return error('Single.timer: "amount" is not a number.');
+    return error(new Error('Single.timer: "amount" is not a number.'));
   }
   const single = new Single();
   single.amount = amount;
