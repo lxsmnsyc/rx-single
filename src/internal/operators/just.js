@@ -13,7 +13,7 @@ function subscribeActual(observer) {
  */
 const just = (value) => {
   if (typeof value === 'undefined') {
-    return error('Single.just: received an undefined value.');
+    return error(new Error('Single.just: received an undefined value.'));
   }
   const single = new Single();
   single.value = value;
