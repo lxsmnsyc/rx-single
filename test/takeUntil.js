@@ -42,7 +42,7 @@ describe('Single', () => {
      *
      */
     it('should signal success if other Single has not emitted an error signal', (done) => {
-      const single = Single.just('Hello').takeUntil(Single.error('World').delay(100));
+      const single = Single.just('Hello').takeUntil(Single.error(new Error('World')).delay(100));
 
       single.subscribe(
         x => (x === 'Hello' ? done() : done(false)),
@@ -64,7 +64,7 @@ describe('Single', () => {
      *
      */
     it('should signal error if other Single has emitted an error signal', (done) => {
-      const single = Single.just('Hello').delay(100).takeUntil(Single.error('World'));
+      const single = Single.just('Hello').delay(100).takeUntil(Single.error(new Error('World')));
 
       single.subscribe(
         done,
@@ -75,7 +75,7 @@ describe('Single', () => {
      *
      */
     it('should signal error if source signals error, nonetheless', (done) => {
-      const single = Single.error('Hello').takeUntil(Single.timer(100));
+      const single = Single.error(new Error('Hello')).takeUntil(Single.timer(100));
 
       single.subscribe(
         done,
