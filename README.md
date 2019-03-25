@@ -69,3 +69,12 @@ To build the coverages, run the test suite, the docs, and the distributable modu
 ```bash
 npm run build
 ```
+
+## Changelogs
+0.2.0
+  - onError (both Observer and Emitter) now only accepts Error instances.
+  - if no onError function is provided for the subscription, the error to be received is thrown instead.
+  - Single.error now only accepts Error instances.
+  - fixed error message for Single.amb
+0.1.0
+  - Release
