@@ -23,7 +23,7 @@ function subscribeActual(observer) {
  */
 const fromResolvable = (subscriber) => {
   if (typeof subscriber !== 'function') {
-    return error('Single.fromResolvable: There are no subscribers.');
+    return error(new Error('Single.fromResolvable: expects a function.'));
   }
   const single = new Single();
   single.subscriber = subscriber;
