@@ -44,7 +44,7 @@ describe('Single', () => {
      */
     it('should signal the error value then fire dispose callback.', (done) => {
       let called;
-      const source = Single.error('Hello');
+      const source = Single.error(new Error('Hello'));
       const single = source.doOnDispose(() => called && done());
 
       const disposable = single.subscribe(
