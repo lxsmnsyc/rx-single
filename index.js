@@ -53,8 +53,8 @@ function onSuccessHandler(value) {
  */
 function onErrorHandler(err) {
   let report = err;
-  if (typeof err === 'undefined') {
-    report = 'onError called with undefined value.';
+  if (!(err instanceof Error)) {
+    report = new Error('onError called with a non-Error value.');
   }
   if (this.disposable.isDisposed()) {
     return;
@@ -163,6 +163,22 @@ class CompositeDisposable {
 /**
  * @ignore
  */
+const identity = x => x;
+/**
+ * @ignore
+ */
+const throwError = (x) => { throw x; };
+/**
+ * @ignore
+ */
+const cleanObserver = x => ({
+  onSubscribe: x.onSubscribe,
+  onSuccess: typeof x.onSuccess === 'function' ? x.onSuccess : identity,
+  onError: typeof x.onError === 'function' ? x.onError : throwError,
+});
+/**
+ * @ignore
+ */
 const immediateSuccess = (o, x) => {
   const disposable = new SimpleDisposable();
   o.onSubscribe(disposable);
@@ -176,11 +192,12 @@ const immediateSuccess = (o, x) => {
  * @ignore
  */
 const immediateError = (o, x) => {
+  const { onSubscribe, onError } = cleanObserver(o);
   const disposable = new SimpleDisposable();
-  o.onSubscribe(disposable);
+  onSubscribe(disposable);
 
   if (!disposable.isDisposed()) {
-    o.onError(x);
+    onError(x);
     disposable.dispose();
   }
 };
@@ -189,7 +206,7 @@ const immediateError = (o, x) => {
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const disposable = new CompositeDisposable();
 
@@ -221,7 +238,7 @@ function subscribeActual(observer) {
         },
       });
     } else {
-      onError('Single.zip: One of the sources is a non-Single.');
+      onError(new Error('Single.amb: One of the sources is a non-Single.'));
       disposable.dispose();
       break;
     }
@@ -233,7 +250,7 @@ function subscribeActual(observer) {
  */
 const amb = (sources) => {
   if (!isIterable(sources)) {
-    return error('Single.amb: sources is not Iterable.');
+    return error(new Error('Single.amb: sources is not Iterable.'));
   }
   const single = new Single();
   single.sources = sources;
@@ -245,7 +262,7 @@ const amb = (sources) => {
  * @ignore
  */
 function subscribeActual$1(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const disposable = new CompositeDisposable();
 
@@ -298,7 +315,7 @@ const ambWith = (source, other) => {
  * @ignore
  */
 function subscribeActual$2(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const {
     source, cached, observers, subscribed,
@@ -372,7 +389,7 @@ const cache = (source) => {
  * @ignore
  */
 function subscribeActual$3(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const emitter = new SimpleDisposable();
   emitter.onSuccess = onSuccessHandler.bind(this);
@@ -394,7 +411,7 @@ function subscribeActual$3(observer) {
  */
 const create = (subscriber) => {
   if (typeof subscriber !== 'function') {
-    return error('Single.create: There are no subscribers.');
+    return error(new Error('Single.create: There are no subscribers.'));
   }
   const single = new Single();
   single.subscriber = subscriber;
@@ -434,7 +451,7 @@ const containsComparer = (x, y) => x === y;
  * @ignore
  */
 function subscribeActual$4(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { value, comparer } = this;
 
@@ -478,7 +495,7 @@ const contains = (source, value, comparer) => {
  * @ignore
  */
 function subscribeActual$5(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   let result;
 
@@ -486,7 +503,7 @@ function subscribeActual$5(observer) {
   try {
     result = this.supplier();
     if (!(result instanceof Single)) {
-      err = 'Single.defer: supplier returned a non-Single.';
+      throw new Error('Single.defer: supplier returned a non-Single.');
     }
   } catch (e) {
     err = e;
@@ -1008,7 +1025,7 @@ function subscribeActual$i(observer) {
     err = this.supplier();
 
     if (typeof err === 'undefined') {
-      err = 'Single.error: Error supplier returned an undefined value.';
+      throw new Error('Single.error: Error supplier returned an undefined value.');
     }
   } catch (e) {
     err = e;
@@ -1020,8 +1037,8 @@ function subscribeActual$i(observer) {
  */
 const error = (value) => {
   let report = value;
-  if (typeof value === 'undefined') {
-    report = 'Single.error received an undefined value.';
+  if (!(value instanceof Error)) {
+    report = new Error('Single.error received a non-Error value.');
   }
 
   if (typeof value !== 'function') {
@@ -1124,7 +1141,7 @@ function subscribeActual$k(observer) {
  */
 const fromCallable = (callable) => {
   if (typeof callable !== 'function') {
-    return error('Single.fromCallable: callable received is not a function.');
+    return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
   const single = new Single();
   single.callable = callable;
@@ -1156,7 +1173,7 @@ function subscribeActual$l(observer) {
  */
 const fromPromise = (promise) => {
   if (!isPromise(promise)) {
-    return error('Single.fromPromise: expects a Promise-like value.');
+    return error(new Error('Single.fromPromise: expects a Promise-like value.'));
   }
   const single = new Single();
   single.promise = promise;
@@ -1185,7 +1202,7 @@ function subscribeActual$m(observer) {
  */
 const fromResolvable = (subscriber) => {
   if (typeof subscriber !== 'function') {
-    return error('Single.fromResolvable: There are no subscribers.');
+    return error(new Error('Single.fromResolvable: expects a function.'));
   }
   const single = new Single();
   single.subscriber = subscriber;
@@ -1204,7 +1221,7 @@ function subscribeActual$n(observer) {
  */
 const just = (value) => {
   if (typeof value === 'undefined') {
-    return error('Single.just: received an undefined value.');
+    return error(new Error('Single.just: received an undefined value.'));
   }
   const single = new Single();
   single.value = value;
@@ -1256,7 +1273,7 @@ const defaultMapper = x => x;
  * @ignore
  */
 function subscribeActual$p(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { mapper } = this;
 
@@ -1298,7 +1315,7 @@ const map = (source, mapper) => {
  * @ignore
  */
 function subscribeActual$q(observer) {
-  const { onSubscribe, onError, onSuccess } = observer;
+  const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
   const disposable = new SimpleDisposable();
 
@@ -1311,7 +1328,7 @@ function subscribeActual$q(observer) {
     onSuccess(x) {
       let result = x;
       if (!(x instanceof Single)) {
-        result = error('Single.merge: source emitted a non-Single value.');
+        result = error(new Error('Single.merge: source emitted a non-Single value.'));
       }
       result.subscribeWith({
         onSubscribe(d) {
@@ -1330,7 +1347,7 @@ function subscribeActual$q(observer) {
  */
 const merge = (source) => {
   if (!(source instanceof Single)) {
-    return error('Single.merge: source is not a Single.');
+    return error(new Error('Single.merge: source is not a Single.'));
   }
 
   const single = new Single();
@@ -1340,7 +1357,7 @@ const merge = (source) => {
 };
 
 function subscribeActual$r(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, resumeIfError } = this;
 
@@ -1363,7 +1380,7 @@ function subscribeActual$r(observer) {
             throw new Error('Single.onErrorResumeNext: returned an non-Single.');
           }
         } catch (e) {
-          onError([x, e]);
+          onError(new Error([x, e]));
           return;
         }
       } else {
@@ -1396,7 +1413,7 @@ const onErrorResumeNext = (source, resumeIfError) => {
 };
 
 function subscribeActual$s(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, item } = this;
 
@@ -1410,7 +1427,7 @@ function subscribeActual$s(observer) {
         result = item(x);
 
         if (typeof result === 'undefined') {
-          throw new Error('Single.onErrorReturn: returned an non-Single.');
+          throw new Error(new Error('Single.onErrorReturn: returned an non-Single.'));
         }
       } catch (e) {
         onError([x, e]);
@@ -1436,7 +1453,7 @@ const onErrorReturn = (source, item) => {
 };
 
 function subscribeActual$t(observer) {
-  const { onSuccess, onSubscribe } = observer;
+  const { onSuccess, onSubscribe } = cleanObserver(observer);
 
   const { source, item } = this;
 
@@ -1488,7 +1505,7 @@ const never = () => {
  * @ignore
  */
 function subscribeActual$v(observer) {
-  const { onSubscribe, onSuccess, onError } = observer;
+  const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
   const disposable = new SimpleDisposable();
 
@@ -1542,7 +1559,7 @@ const retry = (source, bipredicate) => {
  * @ignore
  */
 function subscribeActual$w(observer) {
-  const { onSubscribe, onSuccess, onError } = observer;
+  const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
   const disposable = new CompositeDisposable();
 
@@ -1556,11 +1573,11 @@ function subscribeActual$w(observer) {
         disposable.add(d);
       },
       onSuccess() {
-        onError('Single.takeUntil: Source cancelled by other Single.');
+        onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
         disposable.dispose();
       },
       onError(x) {
-        onError(['Single.takeUntil: Source cancelled by other Single.', x]);
+        onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
         disposable.dispose();
       },
     });
@@ -1600,7 +1617,7 @@ const takeUntil = (source, other) => {
  * @ignore
  */
 function subscribeActual$x(observer) {
-  const { onSuccess, onSubscribe } = observer;
+  const { onSuccess, onSubscribe } = cleanObserver(observer);
 
   let timeout;
 
@@ -1624,7 +1641,7 @@ function subscribeActual$x(observer) {
  */
 const timer = (amount) => {
   if (typeof amount !== 'number') {
-    return error('Single.timer: "amount" is not a number.');
+    return error(new Error('Single.timer: "amount" is not a number.'));
   }
   const single = new Single();
   single.amount = amount;
@@ -1636,7 +1653,7 @@ const timer = (amount) => {
  * @ignore
  */
 function subscribeActual$y(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount } = this;
 
@@ -1654,7 +1671,7 @@ function subscribeActual$y(observer) {
   timeout = setTimeout(
     err,
     amount,
-    'Single.timeout: TimeoutException (no success signals within the specified timeout).',
+    new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'),
   );
 
   onSubscribe(disposable);
@@ -1689,7 +1706,7 @@ const defaultZipper = x => x;
  * @ignore
  */
 function subscribeActual$z(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const result = [];
 
@@ -1702,7 +1719,7 @@ function subscribeActual$z(observer) {
   const size = sources.length;
 
   if (size === 0) {
-    onError('Single.zip: empty iterable');
+    onError(new Error('Single.zip: empty iterable'));
     disposable.dispose();
     return;
   }
@@ -1752,7 +1769,7 @@ function subscribeActual$z(observer) {
       result[i] = single;
       pending -= 1;
     } else {
-      onError('Single.zip: One of the sources is undefined.');
+      onError(new Error('Single.zip: One of the sources is undefined.'));
       disposable.dispose();
       break;
     }
@@ -1763,7 +1780,7 @@ function subscribeActual$z(observer) {
  */
 const zip = (sources, zipper) => {
   if (!isIterable(sources)) {
-    return error('Single.zip: sources is not Iterable.');
+    return error(new Error('Single.zip: sources is not Iterable.'));
   }
   let fn = zipper;
   if (typeof zipper !== 'function') {
@@ -1784,7 +1801,7 @@ const defaultZipper$1 = (x, y) => [x, y];
  * @ignore
  */
 function subscribeActual$A(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   let SA;
   let SB;
@@ -2267,7 +2284,7 @@ class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.png" class="diagram">
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.error.c.png" class="diagram">
    *
-   * @param {!(function():any|any)} err
+   * @param {!(function():Error|Error)} err
    * - the callable that is called for each individual
    * Observer and returns or throws a value to be emitted.
    * - the particular value to pass to onError
