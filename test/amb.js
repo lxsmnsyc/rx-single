@@ -23,7 +23,7 @@ describe('Single', () => {
     it('should signal success from the earliest source.', (done) => {
       const single = Single.amb([Single.just('Hello'), Single.timer(100)]);
       single.subscribe(
-        x => (x === 'Hello' ? done() : done(x)),
+        () => done(),
         done,
       );
     });
@@ -31,10 +31,10 @@ describe('Single', () => {
      *
      */
     it('should signal error from the earliest source.', (done) => {
-      const single = Single.amb([Single.error('Hello'), Single.timer(100)]);
+      const single = Single.amb([Single.error(new Error('Hello')), Single.timer(100)]);
       single.subscribe(
         done,
-        x => (x === 'Hello' ? done() : done(x)),
+        () => done(),
       );
     });
     /**
@@ -44,7 +44,7 @@ describe('Single', () => {
       const single = Single.amb(['Hello', Single.timer(100)]);
       single.subscribe(
         done,
-        () => done(),
+        e => (e instanceof Error ? done() : done(e)),
       );
     });
     /**
@@ -54,7 +54,7 @@ describe('Single', () => {
       const single = Single.amb();
       single.subscribe(
         done,
-        () => done(),
+        e => (e instanceof Error ? done() : done(e)),
       );
     });
   });
