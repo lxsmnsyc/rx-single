@@ -1,11 +1,11 @@
 import Single from '../../single';
-import { CompositeDisposable } from '../utils';
+import { CompositeDisposable, cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSubscribe, onSuccess, onError } = observer;
+  const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
   const disposable = new CompositeDisposable();
 
@@ -19,11 +19,11 @@ function subscribeActual(observer) {
         disposable.add(d);
       },
       onSuccess() {
-        onError('Single.takeUntil: Source cancelled by other Single.');
+        onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
         disposable.dispose();
       },
       onError(x) {
-        onError(['Single.takeUntil: Source cancelled by other Single.', x]);
+        onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
         disposable.dispose();
       },
     });
