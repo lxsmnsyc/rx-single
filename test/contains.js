@@ -55,7 +55,7 @@ describe('Single', () => {
 
       single.subscribe(
         () => done(false),
-        e => (e instanceof Error ? done() : done(false)),
+        e => (e instanceof Error ? done() : done(e)),
       );
     });
   });
