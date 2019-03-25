@@ -1,12 +1,12 @@
 import Single from '../../single';
-import { isIterable, CompositeDisposable } from '../utils';
+import { isIterable, CompositeDisposable, cleanObserver } from '../utils';
 import { error } from '../operators';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const disposable = new CompositeDisposable();
 
@@ -38,7 +38,7 @@ function subscribeActual(observer) {
         },
       });
     } else {
-      onError('Single.zip: One of the sources is a non-Single.');
+      onError(new Error('Single.amb: One of the sources is a non-Single.'));
       disposable.dispose();
       break;
     }
@@ -50,7 +50,7 @@ function subscribeActual(observer) {
  */
 const amb = (sources) => {
   if (!isIterable(sources)) {
-    return error('Single.amb: sources is not Iterable.');
+    return error(new Error('Single.amb: sources is not Iterable.'));
   }
   const single = new Single();
   single.sources = sources;
