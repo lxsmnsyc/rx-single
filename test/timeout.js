@@ -74,7 +74,7 @@ describe('Single', () => {
      *
      */
     it('should not signal error if disposed.', (done) => {
-      const source = Single.error('Hello').delay(200).timeout(100);
+      const source = Single.error(new Error('Hello')).delay(200).timeout(100);
       const disposable = source.subscribe(
         () => done(false),
         () => done(false),
