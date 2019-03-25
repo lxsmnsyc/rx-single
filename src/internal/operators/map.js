@@ -1,4 +1,5 @@
 import Single from '../../single';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -9,7 +10,7 @@ const defaultMapper = x => x;
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { mapper } = this;
 
