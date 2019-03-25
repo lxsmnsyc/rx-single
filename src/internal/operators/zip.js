@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { isIterable, CompositeDisposable } from '../utils';
+import { isIterable, CompositeDisposable, cleanObserver } from '../utils';
 import error from './error';
 
 const defaultZipper = x => x;
@@ -7,7 +7,7 @@ const defaultZipper = x => x;
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const result = [];
 
@@ -20,7 +20,7 @@ function subscribeActual(observer) {
   const size = sources.length;
 
   if (size === 0) {
-    onError('Single.zip: empty iterable');
+    onError(new Error('Single.zip: empty iterable'));
     disposable.dispose();
     return;
   }
@@ -70,7 +70,7 @@ function subscribeActual(observer) {
       result[i] = single;
       pending -= 1;
     } else {
-      onError('Single.zip: One of the sources is undefined.');
+      onError(new Error('Single.zip: One of the sources is undefined.'));
       disposable.dispose();
       break;
     }
@@ -81,7 +81,7 @@ function subscribeActual(observer) {
  */
 const zip = (sources, zipper) => {
   if (!isIterable(sources)) {
-    return error('Single.zip: sources is not Iterable.');
+    return error(new Error('Single.zip: sources is not Iterable.'));
   }
   let fn = zipper;
   if (typeof zipper !== 'function') {
