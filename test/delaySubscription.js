@@ -39,7 +39,7 @@ describe('Single', () => {
      *
      */
     it('should signal error with the given value.', (done) => {
-      const single = Single.error('Hello').delaySubscription(100);
+      const single = Single.error(new Error('Hello')).delaySubscription(100);
       single.subscribe(
         x => done(x),
         x => (x === 'Hello' ? done() : done(false)),
@@ -64,7 +64,7 @@ describe('Single', () => {
      *
      */
     it('should not signal error if disposed.', (done) => {
-      const source = Single.error('Hello').delaySubscription(100);
+      const source = Single.error(new Error('Hello')).delaySubscription(100);
       const disposable = source.subscribe(
         () => done(false),
         () => done(false),
