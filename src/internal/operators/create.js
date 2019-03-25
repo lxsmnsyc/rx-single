@@ -1,5 +1,5 @@
 import {
-  onErrorHandler, onSuccessHandler, SimpleDisposable,
+  onErrorHandler, onSuccessHandler, SimpleDisposable, cleanObserver,
 } from '../utils';
 import Single from '../../single';
 import { error } from '../operators';
@@ -8,7 +8,7 @@ import { error } from '../operators';
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const emitter = new SimpleDisposable();
   emitter.onSuccess = onSuccessHandler.bind(this);
@@ -30,7 +30,7 @@ function subscribeActual(observer) {
  */
 const create = (subscriber) => {
   if (typeof subscriber !== 'function') {
-    return error('Single.create: There are no subscribers.');
+    return error(new Error('Single.create: There are no subscribers.'));
   }
   const single = new Single();
   single.subscriber = subscriber;
