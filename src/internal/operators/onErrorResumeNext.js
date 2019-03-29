@@ -1,20 +1,30 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, resumeIfError } = this;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
-    onSuccess,
+    onSuccess(x) {
+      onSuccess(x);
+      controller.abort();
+    },
     onError(x) {
       let result;
 
@@ -33,11 +43,17 @@ function subscribeActual(observer) {
       }
 
       result.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
-        onSuccess,
-        onError,
+        onSuccess(v) {
+          onSuccess(v);
+          controller.abort();
+        },
+        onError(v) {
+          onError(v);
+          controller.abort();
+        },
       });
     },
   });
@@ -45,7 +61,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const onErrorResumeNext = (source, resumeIfError) => {
+export default (source, resumeIfError) => {
   if (!(typeof resumeIfError === 'function' || resumeIfError instanceof Single)) {
     return source;
   }
@@ -56,5 +72,3 @@ const onErrorResumeNext = (source, resumeIfError) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default onErrorResumeNext;
