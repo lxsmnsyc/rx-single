@@ -21,7 +21,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const error = (value) => {
+export default (value) => {
   let report = value;
   if (!(value instanceof Error)) {
     report = new Error('Single.error received a non-Error value.');
@@ -35,5 +35,3 @@ const error = (value) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default error;
