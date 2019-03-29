@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { CompositeDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -14,86 +15,90 @@ function subscribeActual(observer) {
   let SA;
   let SB;
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { source, other, zipper } = this;
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        SA = x;
+      if (signal.aborted) {
+        return;
+      }
+      SA = x;
 
-        if (typeof SB !== 'undefined') {
-          let result;
+      if (typeof SB !== 'undefined') {
+        let result;
 
-          try {
-            result = zipper(SA, SB);
+        try {
+          result = zipper(SA, SB);
 
-            if (typeof result === 'undefined') {
-              throw new Error('Single.zipWith: zipper function returned an undefined value.');
-            }
-          } catch (e) {
-            onError(e);
-            disposable.dispose();
-            return;
+          if (typeof result === 'undefined') {
+            throw new Error('Single.zipWith: zipper function returned an undefined value.');
           }
-          onSuccess(result);
-          disposable.dispose();
+        } catch (e) {
+          onError(e);
+          controller.abort();
+          return;
         }
+        onSuccess(result);
+        controller.abort();
       }
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        onError(x);
-        disposable.dispose();
-      }
+      onError(x);
+      controller.abort();
     },
   });
 
   other.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        SB = x;
+      if (signal.aborted) {
+        return;
+      }
+      SB = x;
 
-        if (typeof SA !== 'undefined') {
-          let result;
+      if (typeof SA !== 'undefined') {
+        let result;
 
-          try {
-            result = zipper(SA, SB);
+        try {
+          result = zipper(SA, SB);
 
-            if (typeof result === 'undefined') {
-              throw new Error('Single.zipWith: zipper function returned an undefined value.');
-            }
-          } catch (e) {
-            onError(e);
-            disposable.dispose();
-            return;
+          if (typeof result === 'undefined') {
+            throw new Error('Single.zipWith: zipper function returned an undefined value.');
           }
-          onSuccess(result);
-          disposable.dispose();
+        } catch (e) {
+          onError(e);
+          controller.abort();
+          return;
         }
+        onSuccess(result);
+        controller.abort();
       }
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        onError(x);
-        disposable.dispose();
-      }
+      onError(x);
+      controller.abort();
     },
   });
 }
 /**
  * @ignore
  */
-const zipWith = (source, other, zipper) => {
+export default (source, other, zipper) => {
   if (!(other instanceof Single)) {
     return source;
   }
@@ -108,5 +113,3 @@ const zipWith = (source, other, zipper) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default zipWith;
