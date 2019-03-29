@@ -58,5 +58,8 @@
     "nyc": "^13.3.0",
     "rollup": "^1.6.0",
     "terser": "^3.17.0"
+  },
+  "dependencies": {
+    "abort-controller": "^2.0.3"
   }
 }
