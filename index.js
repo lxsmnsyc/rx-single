@@ -105,6 +105,43 @@ const immediateError = (o, x) => {
  * @ignore
  */
 function subscribeActual(observer) {
+  let err;
+
+  try {
+    err = this.supplier();
+
+    if (typeof err === 'undefined') {
+      throw new Error('Single.error: Error supplier returned an undefined value.');
+    }
+  } catch (e) {
+    err = e;
+  }
+  immediateError(observer, err);
+}
+/**
+ * @ignore
+ */
+var error = (value) => {
+  let report = value;
+  if (!(value instanceof Error)) {
+    report = new Error('Single.error received a non-Error value.');
+  }
+
+  if (typeof value !== 'function') {
+    report = toCallable(report);
+  }
+  const single = new Single();
+  single.supplier = report;
+  single.subscribeActual = subscribeActual.bind(single);
+  return single;
+};
+
+/* eslint-disable no-restricted-syntax */
+
+/**
+ * @ignore
+ */
+function subscribeActual$1(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const controller = new AbortController();
@@ -119,13 +156,10 @@ function subscribeActual(observer) {
 
   const { sources } = this;
 
-  const size = sources.length;
-
-  for (let i = 0; i < size; i += 1) {
+  for (const single of sources) {
     if (signal.aborted) {
       return;
     }
-    const single = sources[i];
 
     if (single instanceof Single) {
       single.subscribeWith({
@@ -158,14 +192,14 @@ var amb = (sources) => {
   }
   const single = new Single();
   single.sources = sources;
-  single.subscribeActual = subscribeActual.bind(single);
+  single.subscribeActual = subscribeActual$1.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$1(observer) {
+function subscribeActual$2(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const controller = new AbortController();
@@ -218,14 +252,14 @@ var ambWith = (source, other) => {
   const single = new Single();
   single.source = source;
   single.other = other;
-  single.subscribeActual = subscribeActual$1.bind(single);
+  single.subscribeActual = subscribeActual$2.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$2(observer) {
+function subscribeActual$3(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const {
@@ -281,7 +315,7 @@ function subscribeActual$2(observer) {
       onSuccess(value);
     }
     if (typeof error !== 'undefined') {
-      onError(value);
+      onError(error);
     }
     controller.abort();
   }
@@ -296,14 +330,14 @@ var cache = (source) => {
   single.cached = false;
   single.subscribed = false;
   single.observers = [];
-  single.subscribeActual = subscribeActual$2.bind(single);
+  single.subscribeActual = subscribeActual$3.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$3(observer) {
+function subscribeActual$4(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const emitter = new AbortController();
@@ -331,7 +365,7 @@ var create = (subscriber) => {
   }
   const single = new Single();
   single.subscriber = subscriber;
-  single.subscribeActual = subscribeActual$3.bind(single);
+  single.subscribeActual = subscribeActual$4.bind(single);
   return single;
 };
 
@@ -366,7 +400,7 @@ const containsComparer = (x, y) => x === y;
 /**
  * @ignore
  */
-function subscribeActual$4(observer) {
+function subscribeActual$5(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { value, comparer } = this;
@@ -403,14 +437,14 @@ var contains = (source, value, comparer) => {
   single.source = source;
   single.value = value;
   single.comparer = cmp;
-  single.subscribeActual = subscribeActual$4.bind(single);
+  single.subscribeActual = subscribeActual$5.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$5(observer) {
+function subscribeActual$6(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   let result;
@@ -441,14 +475,14 @@ function subscribeActual$5(observer) {
 var defer = (supplier) => {
   const single = new Single();
   single.supplier = supplier;
-  single.subscribeActual = subscribeActual$5.bind(single);
+  single.subscribeActual = subscribeActual$6.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$6(observer) {
+function subscribeActual$7(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
   const { amount, doDelayError } = this;
@@ -502,14 +536,14 @@ var delay = (source, amount, doDelayError) => {
   single.source = source;
   single.amount = amount;
   single.doDelayError = doDelayError;
-  single.subscribeActual = subscribeActual$6.bind(single);
+  single.subscribeActual = subscribeActual$7.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$7(observer) {
+function subscribeActual$8(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
   const { amount } = this;
@@ -558,14 +592,14 @@ var delaySubscription = (source, amount) => {
   const single = new Single();
   single.source = source;
   single.amount = amount;
-  single.subscribeActual = subscribeActual$7.bind(single);
+  single.subscribeActual = subscribeActual$8.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$8(observer) {
+function subscribeActual$9(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
   const { source, other } = this;
@@ -617,14 +651,14 @@ var delayUntil = (source, other) => {
   const single = new Single();
   single.source = source;
   single.other = other;
-  single.subscribeActual = subscribeActual$8.bind(single);
+  single.subscribeActual = subscribeActual$9.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$9(observer) {
+function subscribeActual$a(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -650,14 +684,14 @@ var doAfterSuccess = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$9.bind(single);
+  single.subscribeActual = subscribeActual$a.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$a(observer) {
+function subscribeActual$b(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -686,14 +720,14 @@ var doAfterTerminate = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$a.bind(single);
+  single.subscribeActual = subscribeActual$b.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$b(observer) {
+function subscribeActual$c(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -737,14 +771,14 @@ var doFinally = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$b.bind(single);
+  single.subscribeActual = subscribeActual$c.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$c(observer) {
+function subscribeActual$d(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -770,14 +804,14 @@ var doOnAbort = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$c.bind(single);
+  single.subscribeActual = subscribeActual$d.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$d(observer) {
+function subscribeActual$e(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -803,14 +837,14 @@ var doOnError = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$d.bind(single);
+  single.subscribeActual = subscribeActual$e.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$e(observer) {
+function subscribeActual$f(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -839,14 +873,14 @@ var doOnEvent = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$e.bind(single);
+  single.subscribeActual = subscribeActual$f.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$f(observer) {
+function subscribeActual$g(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -872,14 +906,14 @@ var doOnSuccess = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$f.bind(single);
+  single.subscribeActual = subscribeActual$g.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$g(observer) {
+function subscribeActual$h(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -904,14 +938,14 @@ var doOnSubscribe = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$g.bind(single);
+  single.subscribeActual = subscribeActual$h.bind(single);
   return single;
 };
 
 /**
  * @ignore
  */
-function subscribeActual$h(observer) {
+function subscribeActual$i(observer) {
   const { onSubscribe, onSuccess, onError } = observer;
 
   const { source, callable } = this;
@@ -940,41 +974,6 @@ var doOnTerminate = (source, callable) => {
   const single = new Single();
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$h.bind(single);
-  return single;
-};
-
-/**
- * @ignore
- */
-function subscribeActual$i(observer) {
-  let err;
-
-  try {
-    err = this.supplier();
-
-    if (typeof err === 'undefined') {
-      throw new Error('Single.error: Error supplier returned an undefined value.');
-    }
-  } catch (e) {
-    err = e;
-  }
-  immediateError(observer, err);
-}
-/**
- * @ignore
- */
-var error = (value) => {
-  let report = value;
-  if (!(value instanceof Error)) {
-    report = new Error('Single.error received a non-Error value.');
-  }
-
-  if (typeof value !== 'function') {
-    report = toCallable(report);
-  }
-  const single = new Single();
-  single.supplier = report;
   single.subscribeActual = subscribeActual$i.bind(single);
   return single;
 };
@@ -1413,7 +1412,7 @@ function subscribeActual$s(observer) {
         result = item(x);
 
         if (typeof result === 'undefined') {
-          throw new Error(new Error('Single.onErrorReturn: returned an non-Single.'));
+          throw new Error(new Error('Single.onErrorReturn: returned an undefined value.'));
         }
       } catch (e) {
         onError([x, e]);
