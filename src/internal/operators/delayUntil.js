@@ -1,5 +1,5 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
 
 /**
  * @ignore
@@ -9,41 +9,47 @@ function subscribeActual(observer) {
 
   const { source, other } = this;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   other.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess() {
-      if (!disposable.isDisposed()) {
+      if (!signal.aborted) {
         source.subscribeWith({
-          onSubscribe(d) {
-            disposable.setDisposable(d);
+          onSubscribe(ac) {
+            signal.addEventListener('abort', () => ac.abort());
           },
           onSuccess(x) {
             onSuccess(x);
-            disposable.dispose();
+            controller.abort();
           },
           onError(x) {
             onError(x);
-            disposable.dispose();
+            controller.abort();
           },
         });
       }
     },
     onError(x) {
       onError(x);
-      disposable.dispose();
+      controller.abort();
     },
   });
 }
 /**
  * @ignore
  */
-const delayUntil = (source, other) => {
+export default (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
@@ -53,5 +59,3 @@ const delayUntil = (source, other) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default delayUntil;
