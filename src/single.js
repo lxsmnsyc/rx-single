@@ -35,17 +35,18 @@
 /**
  * @external {PromiseLike} https://promisesaplus.com/
  */
+import AbortController from 'abort-controller';
 import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
-  doOnDispose, doOnError, doOnSuccess, doOnEvent,
+  doOnAbort, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
   doOnTerminate, cache, delaySubscription, delayUntil,
   merge, flatMap, retry, compose, lift, takeUntil,
 } from './internal/operators';
-import { SimpleDisposable, isObserver } from './internal/utils';
+import { isObserver } from './internal/utils';
 
 /**
  * The Single class implements the Reactive Pattern
@@ -68,8 +69,8 @@ import { SimpleDisposable, isObserver } from './internal/utils';
  * by onError.
  *
  * Like Observable, a running Single can be stopped through
- * the Disposable instance provided to consumers through
- * Observer.onSubscribe(Disposable).
+ * the AbortController instance provided to consumers through
+ * Observer.onSubscribe(AbortController).
  *
  * Singles are cold by default, but using a toPromise method,
  * you can achieve a hot-like Single.
@@ -299,8 +300,8 @@ export default class Single {
 
   /**
    * Calls the shared function if a Observer
-   * subscribed to the current Single disposes
-   * the common Disposable it received via
+   * subscribed to the current Single aborts
+   * the common AbortController it received via
    * onSubscribe.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
@@ -309,8 +310,8 @@ export default class Single {
    * the function called when the subscription is disposed
    * @returns {Single}
    */
-  doOnDispose(callable) {
-    return doOnDispose(this, callable);
+  doOnAbort(callable) {
+    return doOnAbort(this, callable);
   }
 
   /**
@@ -343,14 +344,14 @@ export default class Single {
   }
 
   /**
-   * Calls the shared function with the Disposable
+   * Calls the shared function with the AbortController
    * sent through the onSubscribe for each Observer
    * that subscribes to the current Single.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSubscribe.png" class="diagram">
    *
-   * @param {!function(x: Disposable)} callable
-   * the function called with the Disposable sent via onSubscribe
+   * @param {!function(x: AbortController)} callable
+   * the function called with the AbortController sent via onSubscribe
    * @returns {Single}
    */
   doOnSubscribe(callable) {
@@ -682,7 +683,7 @@ export default class Single {
    *
    * The onSubscribe method is called when subscribeWith
    * or subscribe is executed. This method receives an
-   * object that implements the Disposable interface.
+   * AbortController instance.
    *
    * @param {!Object} observer
    * @returns {undefined}
@@ -708,19 +709,35 @@ export default class Single {
    * @param {?function(x: any)} onError
    * the function you have designed to accept any error
    * notification from the Single
-   * @returns {Disposable}
-   * a Disposable reference can request the Single stop work.
+   * @returns {AbortController}
+   * an AbortController reference can request the Single to abort.
    */
   subscribe(onSuccess, onError) {
-    const disposable = new SimpleDisposable();
+    const controller = new AbortController();
+    let once = false;
     this.subscribeActual({
-      onSubscribe(d) {
-        disposable.setDisposable(d);
+      onSubscribe(ac) {
+        ac.signal.addEventListener('abort', () => {
+          if (!once) {
+            once = true;
+            if (!controller.signal.aborted) {
+              controller.abort();
+            }
+          }
+        });
+        controller.signal.addEventListener('abort', () => {
+          if (!once) {
+            once = true;
+            if (!ac.signal.aborted) {
+              ac.abort();
+            }
+          }
+        });
       },
       onSuccess,
       onError,
     });
-    return disposable;
+    return controller;
   }
 
   /**
