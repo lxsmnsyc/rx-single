@@ -2203,16 +2203,16 @@ class Single {
 
   /**
    * Calls the specified action after this Single signals
-   * onSuccess or onError or gets disposed by the downstream.
+   * onSuccess or onError or gets aborted by the downstream.
    *
-   * In case of a race between a terminal event and a dispose
+   * In case of a race between a terminal event and a abort
    * call, the provided onFinally action is executed once per
    * subscription.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doFinally.png" class="diagram">
    *
    * @param {!Function} callable
-   * the action function when this Single terminates or gets disposed
+   * the action function when this Single terminates or gets aborted
    * @returns {Single}
    */
   doFinally(callable) {
@@ -2228,7 +2228,7 @@ class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
    *
    * @param {!Function} callable
-   * the function called when the subscription is disposed
+   * the function called when the subscription is aborted
    * @returns {Single}
    */
   doOnAbort(callable) {
@@ -2434,7 +2434,7 @@ class Single {
    * from the upstream directly or according to the emission
    * pattern the custom operator's business logic requires.
    * In addition, such operator can intercept the flow control
-   * calls of dispose and isDisposed that would have traveled
+   * calls of abort and signal.aborted that would have traveled
    * upstream and perform additional actions depending on the
    * same business logic requirements.
    *
@@ -2584,7 +2584,7 @@ class Single {
    * If no predicate is provided, repeatedly re-subscribes to
    * the current Single indefinitely if it fails with an onError.
    *
-   * @param {?function(retries: number, err: any):boolean} predicate
+   * @param {?function(retries: number, err: Error):boolean} predicate
    * the predicate called with the resubscription count and the failure
    * value and should return true if a resubscription should happen.
    * @returns {Single}
@@ -2770,7 +2770,7 @@ class Single {
    * and attaches callbacks to it.
    *
    * @param {!function(x: any):any} onFulfill
-   * @param {?function(x: any):any} onReject
+   * @param {?function(x: Error):any} onReject
    * @returns {Promise}
    */
   then(onFulfill, onReject) {
@@ -2781,7 +2781,7 @@ class Single {
    * Converts the Single to a Promise instance
    * and attaches an onRejection callback to it.
    *
-   * @param {!function(x: any):any} onReject
+   * @param {!function(x: Error):any} onReject
    * @returns {Promise}
    */
   catch(onReject) {
