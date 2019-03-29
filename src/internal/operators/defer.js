@@ -32,11 +32,9 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const defer = (supplier) => {
+export default (supplier) => {
   const single = new Single();
   single.supplier = supplier;
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default defer;
