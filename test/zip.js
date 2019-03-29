@@ -101,15 +101,15 @@ describe('Single', () => {
     /**
     *
     */
-    it('should not signal success if disposed.', (done) => {
+    it('should not signal success if aborted.', (done) => {
       const source = Single.zip([Single.just('Hello').delay(100), Single.just('World')]);
-      const disposable = source.subscribe(
+      const controller = source.subscribe(
         () => done(false),
         () => done(false),
       );
 
-      disposable.dispose();
-      if (disposable.isDisposed()) {
+      controller.abort();
+      if (controller.signal.aborted) {
         done();
       }
     });
