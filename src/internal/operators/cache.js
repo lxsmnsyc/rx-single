@@ -61,7 +61,7 @@ function subscribeActual(observer) {
       onSuccess(value);
     }
     if (typeof error !== 'undefined') {
-      onError(value);
+      onError(error);
     }
     controller.abort();
   }
