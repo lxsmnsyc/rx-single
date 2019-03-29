@@ -1,7 +1,7 @@
 import AbortController from 'abort-controller';
 import { onErrorHandler, onSuccessHandler } from '../utils';
 import Single from '../../single';
-import { error } from '../operators';
+import error from './error';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
