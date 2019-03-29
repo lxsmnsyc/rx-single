@@ -21,7 +21,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const doOnSuccess = (source, callable) => {
+export default (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -32,5 +32,3 @@ const doOnSuccess = (source, callable) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default doOnSuccess;
