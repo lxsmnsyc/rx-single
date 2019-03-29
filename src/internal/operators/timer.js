@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 import { error } from '../operators';
 
 /**
@@ -8,27 +9,27 @@ import { error } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onSubscribe } = cleanObserver(observer);
 
-  let timeout;
 
-  const disposable = new SimpleDisposable(() => {
-    if (typeof timeout !== 'undefined') {
-      clearTimeout(timeout);
-    }
-  });
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
 
-  if (!disposable.isDisposed()) {
-    timeout = setTimeout(() => {
-      onSuccess(0);
-      disposable.dispose();
-    }, this.amount);
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
   }
+
+  const timeout = setTimeout(onSuccess, this.amount, 0);
+
+  signal.addEventListener('abort', () => {
+    clearTimeout(timeout);
+  });
 }
 /**
  * @ignore
  */
-const timer = (amount) => {
+export default (amount) => {
   if (typeof amount !== 'number') {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
@@ -37,5 +38,3 @@ const timer = (amount) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default timer;
