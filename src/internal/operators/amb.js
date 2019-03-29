@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { isIterable, CompositeDisposable, cleanObserver } from '../utils';
+import { isIterable, cleanObserver } from '../utils';
 import { error } from '../operators';
 
 /**
@@ -8,47 +9,52 @@ import { error } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { sources } = this;
 
   const size = sources.length;
 
   for (let i = 0; i < size; i += 1) {
-    if (disposable.isDisposed()) {
+    if (signal.aborted) {
       return;
     }
     const single = sources[i];
 
     if (single instanceof Single) {
       single.subscribeWith({
-        onSubscribe(d) {
-          disposable.add(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
           onSuccess(x);
-          disposable.dispose();
+          controller.abort();
         },
         onError(x) {
           onError(x);
-          disposable.dispose();
+          controller.abort();
         },
       });
     } else {
       onError(new Error('Single.amb: One of the sources is a non-Single.'));
-      disposable.dispose();
+      controller.abort();
       break;
     }
   }
-  onSubscribe(disposable);
 }
 /**
  * @ignore
  */
-const amb = (sources) => {
+export default (sources) => {
   if (!isIterable(sources)) {
     return error(new Error('Single.amb: sources is not Iterable.'));
   }
@@ -57,5 +63,3 @@ const amb = (sources) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default amb;
