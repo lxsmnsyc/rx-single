@@ -49,7 +49,7 @@ describe('Single', () => {
      *
      */
     it('should signal error if the Single does not emit item within the given timeout.', (done) => {
-      const single = Single.timer(200).delay(100);
+      const single = Single.timer(200).timeout(100);
       single.subscribe(
         x => done(x),
         () => done(),
@@ -58,30 +58,30 @@ describe('Single', () => {
     /**
      *
      */
-    it('should not signal success if disposed.', (done) => {
+    it('should not signal success if aborted.', (done) => {
       const source = Single.timer(200).timeout(100);
-      const disposable = source.subscribe(
+      const controller = source.subscribe(
         () => done(false),
         () => done(false),
       );
 
-      disposable.dispose();
-      if (disposable.isDisposed()) {
+      controller.abort();
+      if (controller.signal.aborted) {
         done();
       }
     });
     /**
      *
      */
-    it('should not signal error if disposed.', (done) => {
+    it('should not signal error if aborted.', (done) => {
       const source = Single.error(new Error('Hello')).delay(200).timeout(100);
-      const disposable = source.subscribe(
+      const controller = source.subscribe(
         () => done(false),
         () => done(false),
       );
 
-      disposable.dispose();
-      if (disposable.isDisposed()) {
+      controller.abort();
+      if (controller.signal.aborted) {
         done();
       }
     });
