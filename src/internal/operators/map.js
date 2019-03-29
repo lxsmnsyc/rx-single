@@ -35,7 +35,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const map = (source, mapper) => {
+export default (source, mapper) => {
   let ms = mapper;
   if (typeof mapper !== 'function') {
     ms = defaultMapper;
@@ -47,5 +47,3 @@ const map = (source, mapper) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default map;
