@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -15,9 +16,13 @@ function subscribeActual(observer) {
     const index = observers.length;
     observers[index] = observer;
 
-    onSubscribe(new SimpleDisposable(() => {
+    const controller = new AbortController();
+
+    controller.signal.addEventListener('abort', () => {
       observers.splice(index, 1);
-    }));
+    });
+
+    onSubscribe(controller);
 
     if (!subscribed) {
       source.subscribeWith({
@@ -48,8 +53,8 @@ function subscribeActual(observer) {
       this.subscribed = true;
     }
   } else {
-    const disposable = new SimpleDisposable();
-    onSubscribe(disposable);
+    const controller = new AbortController();
+    onSubscribe(controller);
 
     const { value, error } = this;
     if (typeof value !== 'undefined') {
@@ -58,14 +63,14 @@ function subscribeActual(observer) {
     if (typeof error !== 'undefined') {
       onError(value);
     }
-    disposable.dispose();
+    controller.abort();
   }
 }
 
 /**
  * @ignore
  */
-const cache = (source) => {
+export default (source) => {
   const single = new Single();
   single.source = source;
   single.cached = false;
@@ -74,5 +79,3 @@ const cache = (source) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default cache;
