@@ -1,11 +1,4 @@
-/**
- * @ignore
- */
-export const DISPOSED = Symbol('DISPOSED');
-/**
- * @ignore
- */
-export const isDisposable = obj => typeof obj === 'object' && (typeof obj.dispose === 'function' && typeof obj.isDisposed === 'function');
+import AbortController from 'abort-controller';
 /**
  * @ignore
  */
@@ -14,13 +7,6 @@ export const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.it
  * @ignore
  */
 export const isObserver = obj => typeof obj === 'object' && typeof obj.onSubscribe === 'function';
-/**
- * @ignore
- */
-export const neverDisposed = {
-  dispose: () => {},
-  isDisposed: () => false,
-};
 /**
  * @ignore
  */
@@ -33,129 +19,37 @@ export const isPromise = obj => (obj instanceof Promise) || (!!obj && (typeof ob
  * @ignore
  */
 export function onSuccessHandler(value) {
-  if (this.disposable.isDisposed()) {
+  const { onSuccess, onError, controller } = this;
+  if (controller.signal.aborted) {
     return;
   }
   try {
     if (typeof value === 'undefined') {
-      this.onError('onSuccess called with undefined.');
+      onError('onSuccess called with undefined.');
     } else {
-      this.onSuccess(value);
+      onSuccess(value);
     }
   } finally {
-    this.disposable.dispose();
+    controller.abort();
   }
 }
 /**
  * @ignore
  */
 export function onErrorHandler(err) {
+  const { onError, controller } = this;
   let report = err;
   if (!(err instanceof Error)) {
     report = new Error('onError called with a non-Error value.');
   }
-  if (this.disposable.isDisposed()) {
+  if (controller.signal.aborted) {
     return;
   }
 
   try {
-    this.onError(report);
+    onError(report);
   } finally {
-    this.disposable.dispose();
-  }
-}
-/**
- * @ignore
- */
-export class SimpleDisposable {
-  constructor(onDispose) {
-    this.state = false;
-    this.onDispose = onDispose;
-  }
-
-  setDisposable(disposable) {
-    if (isDisposable(disposable)) {
-      if (this.state === DISPOSED) {
-        disposable.dispose();
-      } else {
-        this.state = disposable;
-      }
-    }
-  }
-
-  fire() {
-    const { onDispose } = this;
-    this.state = DISPOSED;
-    if (typeof onDispose === 'function') {
-      onDispose();
-    }
-    this.onDispose = undefined;
-  }
-
-  dispose() {
-    const { state } = this;
-
-    if (state === DISPOSED) {
-      return;
-    }
-
-    if (isDisposable(state)) {
-      if (!state.isDisposed()) {
-        this.state.dispose();
-      }
-      if (state.isDisposed()) {
-        this.fire();
-      }
-    } else {
-      this.fire();
-    }
-  }
-
-  isDisposed() {
-    const { state } = this;
-    if (isDisposable(state)) {
-      if (state.isDisposed()) {
-        this.fire();
-        return true;
-      }
-      return false;
-    }
-    return state === DISPOSED;
-  }
-}
-
-/**
- * @ignore
- */
-export class CompositeDisposable {
-  constructor() {
-    this.set = [];
-    this.disposed = false;
-  }
-
-  add(d) {
-    if (isDisposable(d)) {
-      if (this.disposed) {
-        d.dispose();
-      } else {
-        this.set.push(d);
-      }
-    }
-  }
-
-  dispose() {
-    if (!this.disposed) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const d of this.set) {
-        d.dispose();
-      }
-      this.set = undefined;
-      this.disposed = DISPOSED;
-    }
-  }
-
-  isDisposed() {
-    return this.disposed === DISPOSED;
+    controller.abort();
   }
 }
 /**
@@ -178,12 +72,14 @@ export const cleanObserver = x => ({
  * @ignore
  */
 export const immediateSuccess = (o, x) => {
-  const disposable = new SimpleDisposable();
-  o.onSubscribe(disposable);
+  // const disposable = new SimpleDisposable();
+  const { onSubscribe, onSuccess } = cleanObserver(o);
+  const controller = new AbortController();
+  onSubscribe(controller);
 
-  if (!disposable.isDisposed()) {
-    o.onSuccess(x);
-    disposable.dispose();
+  if (!controller.signal.aborted) {
+    onSuccess(x);
+    controller.abort();
   }
 };
 /**
@@ -191,11 +87,11 @@ export const immediateSuccess = (o, x) => {
  */
 export const immediateError = (o, x) => {
   const { onSubscribe, onError } = cleanObserver(o);
-  const disposable = new SimpleDisposable();
-  onSubscribe(disposable);
+  const controller = new AbortController();
+  onSubscribe(controller);
 
-  if (!disposable.isDisposed()) {
+  if (!controller.signal.aborted) {
     onError(x);
-    disposable.dispose();
+    controller.abort();
   }
 };
