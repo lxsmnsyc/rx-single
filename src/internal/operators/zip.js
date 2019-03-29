@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { isIterable, CompositeDisposable, cleanObserver } from '../utils';
+import { isIterable, cleanObserver } from '../utils';
 import error from './error';
 
 const defaultZipper = x => x;
@@ -11,9 +12,15 @@ function subscribeActual(observer) {
 
   const result = [];
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { sources, zipper } = this;
 
@@ -21,49 +28,48 @@ function subscribeActual(observer) {
 
   if (size === 0) {
     onError(new Error('Single.zip: empty iterable'));
-    disposable.dispose();
+    controller.abort();
     return;
   }
   let pending = size;
 
   for (let i = 0; i < size; i += 1) {
-    if (disposable.isDisposed()) {
+    if (signal.aborted) {
       return;
     }
     const single = sources[i];
 
     if (single instanceof Single) {
       single.subscribeWith({
-        onSubscribe(d) {
-          disposable.add(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
-          if (!disposable.isDisposed()) {
-            result[i] = x;
-            pending -= 1;
-            if (pending === 0) {
-              let r;
-              try {
-                r = zipper(result);
-                if (typeof r === 'undefined') {
-                  throw new Error('Single.zip: zipper function returned an undefined value.');
-                }
-              } catch (e) {
-                onError(e);
-                disposable.dispose();
-                return;
+          if (signal.aborted) {
+            return;
+          }
+          result[i] = x;
+          pending -= 1;
+          if (pending === 0) {
+            let r;
+            try {
+              r = zipper(result);
+              if (typeof r === 'undefined') {
+                throw new Error('Single.zip: zipper function returned an undefined value.');
               }
-              onSuccess(r);
-              disposable.dispose();
+            } catch (e) {
+              onError(e);
+              controller.abort();
+              return;
             }
+            onSuccess(r);
+            controller.abort();
           }
         },
         onError(x) {
-          if (!disposable.isDisposed()) {
-            onError(x);
-            disposable.dispose();
-          }
+          onError(x);
+          controller.abort();
         },
       });
     } else if (typeof single !== 'undefined') {
@@ -71,7 +77,7 @@ function subscribeActual(observer) {
       pending -= 1;
     } else {
       onError(new Error('Single.zip: One of the sources is undefined.'));
-      disposable.dispose();
+      controller.abort();
       break;
     }
   }
@@ -79,7 +85,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const zip = (sources, zipper) => {
+export default (sources, zipper) => {
   if (!isIterable(sources)) {
     return error(new Error('Single.zip: sources is not Iterable.'));
   }
@@ -93,5 +99,3 @@ const zip = (sources, zipper) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default zip;
