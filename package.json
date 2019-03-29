@@ -1,6 +1,6 @@
 {
   "name": "rx-single",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Reactive Extensions - Represents an asynchronous value or error",
   "main": "index.js",
   "scripts": {
