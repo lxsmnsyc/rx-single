@@ -1,7 +1,8 @@
+/* eslint-disable no-restricted-syntax */
 import AbortController from 'abort-controller';
 import Single from '../../single';
 import { isIterable, cleanObserver } from '../utils';
-import { error } from '../operators';
+import error from './error';
 
 /**
  * @ignore
@@ -21,13 +22,10 @@ function subscribeActual(observer) {
 
   const { sources } = this;
 
-  const size = sources.length;
-
-  for (let i = 0; i < size; i += 1) {
+  for (const single of sources) {
     if (signal.aborted) {
       return;
     }
-    const single = sources[i];
 
     if (single instanceof Single) {
       single.subscribeWith({
