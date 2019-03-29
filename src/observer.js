@@ -6,8 +6,8 @@
 // eslint-disable-next-line no-unused-vars
 export default class Observer {
   /**
-   * Receives the disposable subscription.
-   * @param {!Disposable} d
+   * Receives the AbortController subscription.
+   * @param {!AbortController} d
    * @abstract
    */
   // eslint-disable-next-line class-methods-use-this, no-unused-vars
