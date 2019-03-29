@@ -1,6 +1,7 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
 import error from './error';
-import { SimpleDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -8,13 +9,19 @@ import { SimpleDisposable, cleanObserver } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   this.source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
       let result = x;
@@ -22,21 +29,30 @@ function subscribeActual(observer) {
         result = error(new Error('Single.merge: source emitted a non-Single value.'));
       }
       result.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
-        onSuccess,
-        onError,
+        onSuccess(v) {
+          onSuccess(v);
+          controller.abort();
+        },
+        onError(v) {
+          onError(v);
+          controller.abort();
+        },
       });
     },
-    onError,
+    onError(v) {
+      onError(v);
+      controller.abort();
+    },
   });
 }
 
 /**
  * @ignore
  */
-const merge = (source) => {
+export default (source) => {
   if (!(source instanceof Single)) {
     return error(new Error('Single.merge: source is not a Single.'));
   }
@@ -46,5 +62,3 @@ const merge = (source) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default merge;
