@@ -1,6 +1,7 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
 import {
-  isPromise, onSuccessHandler, onErrorHandler, SimpleDisposable,
+  isPromise, onSuccessHandler, onErrorHandler,
 } from '../utils';
 import { error } from '../operators';
 /**
@@ -9,11 +10,15 @@ import { error } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
 
-  this.disposable = disposable;
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  this.controller = controller;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
@@ -25,7 +30,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const fromPromise = (promise) => {
+export default (promise) => {
   if (!isPromise(promise)) {
     return error(new Error('Single.fromPromise: expects a Promise-like value.'));
   }
@@ -34,5 +39,3 @@ const fromPromise = (promise) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default fromPromise;
