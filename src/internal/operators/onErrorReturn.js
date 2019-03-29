@@ -29,7 +29,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const onErrorReturn = (source, item) => {
+export default (source, item) => {
   if (typeof item !== 'function') {
     return source;
   }
@@ -40,5 +40,3 @@ const onErrorReturn = (source, item) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default onErrorReturn;
