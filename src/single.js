@@ -35,6 +35,9 @@
 /**
  * @external {PromiseLike} https://promisesaplus.com/
  */
+/**
+ * @external {AbortController} https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+ */
 import AbortController from 'abort-controller';
 import {
   create, contains, just, error, defer, delay,
@@ -282,16 +285,16 @@ export default class Single {
 
   /**
    * Calls the specified action after this Single signals
-   * onSuccess or onError or gets disposed by the downstream.
+   * onSuccess or onError or gets aborted by the downstream.
    *
-   * In case of a race between a terminal event and a dispose
+   * In case of a race between a terminal event and a abort
    * call, the provided onFinally action is executed once per
    * subscription.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doFinally.png" class="diagram">
    *
    * @param {!Function} callable
-   * the action function when this Single terminates or gets disposed
+   * the action function when this Single terminates or gets aborted
    * @returns {Single}
    */
   doFinally(callable) {
@@ -307,7 +310,7 @@ export default class Single {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
    *
    * @param {!Function} callable
-   * the function called when the subscription is disposed
+   * the function called when the subscription is aborted
    * @returns {Single}
    */
   doOnAbort(callable) {
@@ -513,7 +516,7 @@ export default class Single {
    * from the upstream directly or according to the emission
    * pattern the custom operator's business logic requires.
    * In addition, such operator can intercept the flow control
-   * calls of dispose and isDisposed that would have traveled
+   * calls of abort and signal.aborted that would have traveled
    * upstream and perform additional actions depending on the
    * same business logic requirements.
    *
