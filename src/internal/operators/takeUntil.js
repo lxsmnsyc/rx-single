@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { CompositeDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -7,41 +8,53 @@ import { CompositeDisposable, cleanObserver } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { source, other } = this;
 
-  if (!disposable.isDisposed()) {
-    other.subscribeWith({
-      onSubscribe(d) {
-        disposable.add(d);
-      },
-      onSuccess() {
+  other.subscribeWith({
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
+    },
+    onSuccess() {
+      if (!signal.aborted) {
         onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
-        disposable.dispose();
-      },
-      onError(x) {
+        controller.abort();
+      }
+    },
+    onError(x) {
+      if (!signal.aborted) {
         onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
-        disposable.dispose();
-      },
-    });
+        controller.abort();
+      }
+    },
+  });
 
-    source.subscribeWith({
-      onSubscribe(d) {
-        disposable.add(d);
-      },
-      onSuccess(x) {
+  source.subscribeWith({
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
+    },
+    onSuccess(x) {
+      if (!signal.aborted) {
         onSuccess(x);
-        disposable.dispose();
-      },
-      onError(x) {
+        controller.abort();
+      }
+    },
+    onError(x) {
+      if (!signal.aborted) {
         onError(x);
-        disposable.dispose();
-      },
-    });
-  }
+        controller.abort();
+      }
+    },
+  });
 }
 
 /**
