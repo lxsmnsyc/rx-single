@@ -1,13 +1,9 @@
 'use strict';
 
-/**
- * @ignore
- */
-const DISPOSED = Symbol('DISPOSED');
-/**
- * @ignore
- */
-const isDisposable = obj => typeof obj === 'object' && (typeof obj.dispose === 'function' && typeof obj.isDisposed === 'function');
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var AbortController = _interopDefault(require('abort-controller'));
+
 /**
  * @ignore
  */
@@ -16,13 +12,6 @@ const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.iterator]
  * @ignore
  */
 const isObserver = obj => typeof obj === 'object' && typeof obj.onSubscribe === 'function';
-/**
- * @ignore
- */
-const neverDisposed = {
-  dispose: () => {},
-  isDisposed: () => false,
-};
 /**
  * @ignore
  */
@@ -35,129 +24,37 @@ const isPromise = obj => (obj instanceof Promise) || (!!obj && (typeof obj === '
  * @ignore
  */
 function onSuccessHandler(value) {
-  if (this.disposable.isDisposed()) {
+  const { onSuccess, onError, controller } = this;
+  if (controller.signal.aborted) {
     return;
   }
   try {
     if (typeof value === 'undefined') {
-      this.onError('onSuccess called with undefined.');
+      onError('onSuccess called with undefined.');
     } else {
-      this.onSuccess(value);
+      onSuccess(value);
     }
   } finally {
-    this.disposable.dispose();
+    controller.abort();
   }
 }
 /**
  * @ignore
  */
 function onErrorHandler(err) {
+  const { onError, controller } = this;
   let report = err;
   if (!(err instanceof Error)) {
     report = new Error('onError called with a non-Error value.');
   }
-  if (this.disposable.isDisposed()) {
+  if (controller.signal.aborted) {
     return;
   }
 
   try {
-    this.onError(report);
+    onError(report);
   } finally {
-    this.disposable.dispose();
-  }
-}
-/**
- * @ignore
- */
-class SimpleDisposable {
-  constructor(onDispose) {
-    this.state = false;
-    this.onDispose = onDispose;
-  }
-
-  setDisposable(disposable) {
-    if (isDisposable(disposable)) {
-      if (this.state === DISPOSED) {
-        disposable.dispose();
-      } else {
-        this.state = disposable;
-      }
-    }
-  }
-
-  fire() {
-    const { onDispose } = this;
-    this.state = DISPOSED;
-    if (typeof onDispose === 'function') {
-      onDispose();
-    }
-    this.onDispose = undefined;
-  }
-
-  dispose() {
-    const { state } = this;
-
-    if (state === DISPOSED) {
-      return;
-    }
-
-    if (isDisposable(state)) {
-      if (!state.isDisposed()) {
-        this.state.dispose();
-      }
-      if (state.isDisposed()) {
-        this.fire();
-      }
-    } else {
-      this.fire();
-    }
-  }
-
-  isDisposed() {
-    const { state } = this;
-    if (isDisposable(state)) {
-      if (state.isDisposed()) {
-        this.fire();
-        return true;
-      }
-      return false;
-    }
-    return state === DISPOSED;
-  }
-}
-
-/**
- * @ignore
- */
-class CompositeDisposable {
-  constructor() {
-    this.set = [];
-    this.disposed = false;
-  }
-
-  add(d) {
-    if (isDisposable(d)) {
-      if (this.disposed) {
-        d.dispose();
-      } else {
-        this.set.push(d);
-      }
-    }
-  }
-
-  dispose() {
-    if (!this.disposed) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const d of this.set) {
-        d.dispose();
-      }
-      this.set = undefined;
-      this.disposed = DISPOSED;
-    }
-  }
-
-  isDisposed() {
-    return this.disposed === DISPOSED;
+    controller.abort();
   }
 }
 /**
@@ -180,12 +77,14 @@ const cleanObserver = x => ({
  * @ignore
  */
 const immediateSuccess = (o, x) => {
-  const disposable = new SimpleDisposable();
-  o.onSubscribe(disposable);
+  // const disposable = new SimpleDisposable();
+  const { onSubscribe, onSuccess } = cleanObserver(o);
+  const controller = new AbortController();
+  onSubscribe(controller);
 
-  if (!disposable.isDisposed()) {
-    o.onSuccess(x);
-    disposable.dispose();
+  if (!controller.signal.aborted) {
+    onSuccess(x);
+    controller.abort();
   }
 };
 /**
@@ -193,12 +92,12 @@ const immediateSuccess = (o, x) => {
  */
 const immediateError = (o, x) => {
   const { onSubscribe, onError } = cleanObserver(o);
-  const disposable = new SimpleDisposable();
-  onSubscribe(disposable);
+  const controller = new AbortController();
+  onSubscribe(controller);
 
-  if (!disposable.isDisposed()) {
+  if (!controller.signal.aborted) {
     onError(x);
-    disposable.dispose();
+    controller.abort();
   }
 };
 
@@ -208,47 +107,52 @@ const immediateError = (o, x) => {
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { sources } = this;
 
   const size = sources.length;
 
   for (let i = 0; i < size; i += 1) {
-    if (disposable.isDisposed()) {
+    if (signal.aborted) {
       return;
     }
     const single = sources[i];
 
     if (single instanceof Single) {
       single.subscribeWith({
-        onSubscribe(d) {
-          disposable.add(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
           onSuccess(x);
-          disposable.dispose();
+          controller.abort();
         },
         onError(x) {
           onError(x);
-          disposable.dispose();
+          controller.abort();
         },
       });
     } else {
       onError(new Error('Single.amb: One of the sources is a non-Single.'));
-      disposable.dispose();
+      controller.abort();
       break;
     }
   }
-  onSubscribe(disposable);
 }
 /**
  * @ignore
  */
-const amb = (sources) => {
+var amb = (sources) => {
   if (!isIterable(sources)) {
     return error(new Error('Single.amb: sources is not Iterable.'));
   }
@@ -264,43 +168,50 @@ const amb = (sources) => {
 function subscribeActual$1(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
+
+  const sharedSuccess = (x) => {
+    if (!signal.aborted) {
+      onSuccess(x);
+      controller.abort();
+    }
+  };
+  const sharedError = (x) => {
+    if (!signal.aborted) {
+      onError(x);
+      controller.abort();
+    }
+  };
 
   const { source, other } = this;
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
-    onSuccess(x) {
-      onSuccess(x);
-      disposable.dispose();
-    },
-    onError(x) {
-      onError(x);
-      disposable.dispose();
-    },
+    onSuccess: sharedSuccess,
+    onError: sharedError,
   });
   other.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
-    onSuccess(x) {
-      onSuccess(x);
-      disposable.dispose();
-    },
-    onError(x) {
-      onError(x);
-      disposable.dispose();
-    },
+    onSuccess: sharedSuccess,
+    onError: sharedError,
   });
 }
 /**
  * @ignore
  */
-const ambWith = (source, other) => {
+var ambWith = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
@@ -325,9 +236,13 @@ function subscribeActual$2(observer) {
     const index = observers.length;
     observers[index] = observer;
 
-    onSubscribe(new SimpleDisposable(() => {
+    const controller = new AbortController();
+
+    controller.signal.addEventListener('abort', () => {
       observers.splice(index, 1);
-    }));
+    });
+
+    onSubscribe(controller);
 
     if (!subscribed) {
       source.subscribeWith({
@@ -358,8 +273,8 @@ function subscribeActual$2(observer) {
       this.subscribed = true;
     }
   } else {
-    const disposable = new SimpleDisposable();
-    onSubscribe(disposable);
+    const controller = new AbortController();
+    onSubscribe(controller);
 
     const { value, error } = this;
     if (typeof value !== 'undefined') {
@@ -368,14 +283,14 @@ function subscribeActual$2(observer) {
     if (typeof error !== 'undefined') {
       onError(value);
     }
-    disposable.dispose();
+    controller.abort();
   }
 }
 
 /**
  * @ignore
  */
-const cache = (source) => {
+var cache = (source) => {
   const single = new Single();
   single.source = source;
   single.cached = false;
@@ -391,15 +306,16 @@ const cache = (source) => {
 function subscribeActual$3(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const emitter = new SimpleDisposable();
+  const emitter = new AbortController();
   emitter.onSuccess = onSuccessHandler.bind(this);
   emitter.onError = onErrorHandler.bind(this);
 
-  this.disposable = emitter;
+  this.controller = emitter;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
   onSubscribe(emitter);
+
   try {
     this.subscriber(emitter);
   } catch (ex) {
@@ -409,7 +325,7 @@ function subscribeActual$3(observer) {
 /**
  * @ignore
  */
-const create = (subscriber) => {
+var create = (subscriber) => {
   if (typeof subscriber !== 'function') {
     return error(new Error('Single.create: There are no subscribers.'));
   }
@@ -422,7 +338,7 @@ const create = (subscriber) => {
 /**
  * @ignore
  */
-const compose = (source, transformer) => {
+var compose = (source, transformer) => {
   if (typeof transformer !== 'function') {
     return source;
   }
@@ -473,7 +389,7 @@ function subscribeActual$4(observer) {
 /**
  * @ignore
  */
-const contains = (source, value, comparer) => {
+var contains = (source, value, comparer) => {
   if (typeof value === 'undefined') {
     return source;
   }
@@ -522,7 +438,7 @@ function subscribeActual$5(observer) {
 /**
  * @ignore
  */
-const defer = (supplier) => {
+var defer = (supplier) => {
   const single = new Single();
   single.supplier = supplier;
   single.subscribeActual = subscribeActual$5.bind(single);
@@ -535,32 +451,42 @@ const defer = (supplier) => {
 function subscribeActual$6(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
+  const { amount, doDelayError } = this;
+
   let timeout;
 
-  const disposable = new SimpleDisposable(() => {
+  const controller = new AbortController();
+
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
+
+  signal.addEventListener('abort', () => {
     if (typeof timeout !== 'undefined') {
       clearTimeout(timeout);
     }
   });
 
-  const { amount, doDelayError } = this;
-
-  onSubscribe(disposable);
-
   this.source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => {
+        ac.abort();
+      });
     },
     onSuccess(x) {
       timeout = setTimeout(() => {
         onSuccess(x);
-        disposable.dispose();
+        controller.abort();
       }, amount);
     },
     onError(x) {
       timeout = setTimeout(() => {
         onError(x);
-        disposable.dispose();
+        controller.abort();
       }, doDelayError ? amount : 0);
     },
   });
@@ -568,7 +494,7 @@ function subscribeActual$6(observer) {
 /**
  * @ignore
  */
-const delay = (source, amount, doDelayError) => {
+var delay = (source, amount, doDelayError) => {
   if (typeof amount !== 'number') {
     return source;
   }
@@ -590,26 +516,34 @@ function subscribeActual$7(observer) {
 
   let timeout;
 
-  const disposable = new SimpleDisposable(() => {
+  const controller = new AbortController();
+
+  const { signal } = controller;
+
+  signal.addEventListener('abort', () => {
     if (typeof timeout !== 'undefined') {
       clearTimeout(timeout);
     }
   });
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   timeout = setTimeout(() => {
     this.source.subscribeWith({
-      onSubscribe(d) {
-        disposable.setDisposable(d);
+      onSubscribe(ac) {
+        signal.addEventListener('abort', () => ac.abort());
       },
       onSuccess(x) {
         onSuccess(x);
-        disposable.dispose();
+        controller.abort();
       },
       onError(x) {
         onError(x);
-        disposable.dispose();
+        controller.abort();
       },
     });
   }, amount);
@@ -617,7 +551,7 @@ function subscribeActual$7(observer) {
 /**
  * @ignore
  */
-const delaySubscription = (source, amount) => {
+var delaySubscription = (source, amount) => {
   if (typeof amount !== 'number') {
     return source;
   }
@@ -636,41 +570,47 @@ function subscribeActual$8(observer) {
 
   const { source, other } = this;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   other.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess() {
-      if (!disposable.isDisposed()) {
+      if (!signal.aborted) {
         source.subscribeWith({
-          onSubscribe(d) {
-            disposable.setDisposable(d);
+          onSubscribe(ac) {
+            signal.addEventListener('abort', () => ac.abort());
           },
           onSuccess(x) {
             onSuccess(x);
-            disposable.dispose();
+            controller.abort();
           },
           onError(x) {
             onError(x);
-            disposable.dispose();
+            controller.abort();
           },
         });
       }
     },
     onError(x) {
       onError(x);
-      disposable.dispose();
+      controller.abort();
     },
   });
 }
 /**
  * @ignore
  */
-const delayUntil = (source, other) => {
+var delayUntil = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
@@ -702,7 +642,7 @@ function subscribeActual$9(observer) {
 /**
  * @ignore
  */
-const doAfterSuccess = (source, callable) => {
+var doAfterSuccess = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -738,7 +678,7 @@ function subscribeActual$a(observer) {
 /**
  * @ignore
  */
-const doAfterTerminate = (source, callable) => {
+var doAfterTerminate = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -759,17 +699,15 @@ function subscribeActual$b(observer) {
   const { source, callable } = this;
 
   let called = false;
-  const disposable = new SimpleDisposable(() => {
-    if (!called) {
-      callable();
-      called = true;
-    }
-  });
-
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
-      onSubscribe(disposable);
+    onSubscribe(ac) {
+      ac.signal.addEventListener('abort', () => {
+        if (!called) {
+          callable();
+          called = true;
+        }
+      });
+      onSubscribe(ac);
     },
     onSuccess(x) {
       onSuccess(x);
@@ -791,7 +729,7 @@ function subscribeActual$b(observer) {
 /**
  * @ignore
  */
-const doAfterTerminate$1 = (source, callable) => {
+var doFinally = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -811,29 +749,20 @@ function subscribeActual$c(observer) {
 
   const { source, callable } = this;
 
-  const disposable = new SimpleDisposable(callable);
-
-  onSubscribe(disposable);
-
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      ac.signal.addEventListener('abort', callable);
+      onSubscribe(ac);
     },
-    onSuccess(x) {
-      onSuccess(x);
-      disposable.dispose();
-    },
-    onError(x) {
-      onError(x);
-      disposable.dispose();
-    },
+    onSuccess,
+    onError,
   });
 }
 
 /**
  * @ignore
  */
-const doOnDispose = (source, callable) => {
+var doOnAbort = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -866,7 +795,7 @@ function subscribeActual$d(observer) {
 /**
  * @ignore
  */
-const doOnError = (source, callable) => {
+var doOnError = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -902,7 +831,7 @@ function subscribeActual$e(observer) {
 /**
  * @ignore
  */
-const doOnEvent = (source, callable) => {
+var doOnEvent = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -935,7 +864,7 @@ function subscribeActual$f(observer) {
 /**
  * @ignore
  */
-const doOnSuccess = (source, callable) => {
+var doOnSuccess = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -968,7 +897,7 @@ function subscribeActual$g(observer) {
 /**
  * @ignore
  */
-const doOnSubscribe = (source, callable) => {
+var doOnSubscribe = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -1003,7 +932,7 @@ function subscribeActual$h(observer) {
 /**
  * @ignore
  */
-const doOnTerminate = (source, callable) => {
+var doOnTerminate = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -1035,7 +964,7 @@ function subscribeActual$i(observer) {
 /**
  * @ignore
  */
-const error = (value) => {
+var error = (value) => {
   let report = value;
   if (!(value instanceof Error)) {
     report = new Error('Single.error received a non-Error value.');
@@ -1056,15 +985,21 @@ const error = (value) => {
 function subscribeActual$j(observer) {
   const { onSubscribe, onError, onSuccess } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { mapper, source } = this;
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
       let result;
@@ -1079,21 +1014,30 @@ function subscribeActual$j(observer) {
         return;
       }
       result.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
-        onSuccess,
-        onError,
+        onSuccess(v) {
+          onSuccess(v);
+          controller.abort();
+        },
+        onError(v) {
+          onError(v);
+          controller.abort();
+        },
       });
     },
-    onError,
+    onError(v) {
+      onError(v);
+      controller.abort();
+    },
   });
 }
 
 /**
  * @ignore
  */
-const flatMap = (source, mapper) => {
+var flatMap = (source, mapper) => {
   if (typeof mapper !== 'function') {
     return source;
   }
@@ -1111,11 +1055,15 @@ const flatMap = (source, mapper) => {
 function subscribeActual$k(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
 
-  this.disposable = disposable;
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  this.controller = controller;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
@@ -1139,7 +1087,7 @@ function subscribeActual$k(observer) {
 /**
  * @ignore
  */
-const fromCallable = (callable) => {
+var fromCallable = (callable) => {
   if (typeof callable !== 'function') {
     return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
@@ -1155,11 +1103,15 @@ const fromCallable = (callable) => {
 function subscribeActual$l(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
 
-  this.disposable = disposable;
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  this.controller = controller;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
@@ -1171,7 +1123,7 @@ function subscribeActual$l(observer) {
 /**
  * @ignore
  */
-const fromPromise = (promise) => {
+var fromPromise = (promise) => {
   if (!isPromise(promise)) {
     return error(new Error('Single.fromPromise: expects a Promise-like value.'));
   }
@@ -1184,11 +1136,15 @@ const fromPromise = (promise) => {
 function subscribeActual$m(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
 
-  this.disposable = disposable;
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  this.controller = controller;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
@@ -1200,7 +1156,7 @@ function subscribeActual$m(observer) {
 /**
  * @ignore
  */
-const fromResolvable = (subscriber) => {
+var fromResolvable = (subscriber) => {
   if (typeof subscriber !== 'function') {
     return error(new Error('Single.fromResolvable: expects a function.'));
   }
@@ -1219,7 +1175,7 @@ function subscribeActual$n(observer) {
 /**
  * @ignore
  */
-const just = (value) => {
+var just = (value) => {
   if (typeof value === 'undefined') {
     return error(new Error('Single.just: received an undefined value.'));
   }
@@ -1252,7 +1208,7 @@ function subscribeActual$o(observer) {
 /**
  * @ignore
  */
-const lift = (source, operator) => {
+var lift = (source, operator) => {
   if (typeof operator !== 'function') {
     return source;
   }
@@ -1298,7 +1254,7 @@ function subscribeActual$p(observer) {
 /**
  * @ignore
  */
-const map = (source, mapper) => {
+var map = (source, mapper) => {
   let ms = mapper;
   if (typeof mapper !== 'function') {
     ms = defaultMapper;
@@ -1317,13 +1273,19 @@ const map = (source, mapper) => {
 function subscribeActual$q(observer) {
   const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   this.source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
       let result = x;
@@ -1331,21 +1293,30 @@ function subscribeActual$q(observer) {
         result = error(new Error('Single.merge: source emitted a non-Single value.'));
       }
       result.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
-        onSuccess,
-        onError,
+        onSuccess(v) {
+          onSuccess(v);
+          controller.abort();
+        },
+        onError(v) {
+          onError(v);
+          controller.abort();
+        },
       });
     },
-    onError,
+    onError(v) {
+      onError(v);
+      controller.abort();
+    },
   });
 }
 
 /**
  * @ignore
  */
-const merge = (source) => {
+var merge = (source) => {
   if (!(source instanceof Single)) {
     return error(new Error('Single.merge: source is not a Single.'));
   }
@@ -1361,15 +1332,24 @@ function subscribeActual$r(observer) {
 
   const { source, resumeIfError } = this;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
-    onSuccess,
+    onSuccess(x) {
+      onSuccess(x);
+      controller.abort();
+    },
     onError(x) {
       let result;
 
@@ -1388,11 +1368,17 @@ function subscribeActual$r(observer) {
       }
 
       result.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
-        onSuccess,
-        onError,
+        onSuccess(v) {
+          onSuccess(v);
+          controller.abort();
+        },
+        onError(v) {
+          onError(v);
+          controller.abort();
+        },
       });
     },
   });
@@ -1400,7 +1386,7 @@ function subscribeActual$r(observer) {
 /**
  * @ignore
  */
-const onErrorResumeNext = (source, resumeIfError) => {
+var onErrorResumeNext = (source, resumeIfError) => {
   if (!(typeof resumeIfError === 'function' || resumeIfError instanceof Single)) {
     return source;
   }
@@ -1440,7 +1426,7 @@ function subscribeActual$s(observer) {
 /**
  * @ignore
  */
-const onErrorReturn = (source, item) => {
+var onErrorReturn = (source, item) => {
   if (typeof item !== 'function') {
     return source;
   }
@@ -1468,7 +1454,7 @@ function subscribeActual$t(observer) {
 /**
  * @ignore
  */
-const onErrorReturnItem = (source, item) => {
+var onErrorReturnItem = (source, item) => {
   if (typeof item === 'undefined') {
     return source;
   }
@@ -1480,11 +1466,26 @@ const onErrorReturnItem = (source, item) => {
   return single;
 };
 
+/* eslint-disable class-methods-use-this */
+
+const SIGNAL = {
+  aborted: false,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  onabort: () => {},
+};
+
+
+const CONTROLLER = {
+  signal: SIGNAL,
+  abort: () => {},
+};
+
 /**
  * @ignore
  */
 function subscribeActual$u(observer) {
-  observer.onSubscribe(neverDisposed);
+  observer.onSubscribe(CONTROLLER);
 }
 /**
  * @ignore
@@ -1493,7 +1494,7 @@ let INSTANCE;
 /**
  * @ignore
  */
-const never = () => {
+var never = () => {
   if (typeof INSTANCE === 'undefined') {
     INSTANCE = new Single();
     INSTANCE.subscribeActual = subscribeActual$u.bind(INSTANCE);
@@ -1507,38 +1508,49 @@ const never = () => {
 function subscribeActual$v(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { source, bipredicate } = this;
 
   let retries = 0;
 
   const sub = () => {
-    if (!disposable.isDisposed()) {
-      retries += 1;
-
-      source.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
-        },
-        onSuccess,
-        onError(x) {
-          if (typeof bipredicate === 'function') {
-            const result = bipredicate(retries, x);
-
-            if (result) {
-              sub();
-            } else {
-              onError(x);
-            }
-          } else {
-            sub();
-          }
-        },
-      });
+    if (signal.aborted) {
+      return;
     }
+    retries += 1;
+
+    source.subscribeWith({
+      onSubscribe(ac) {
+        signal.addEventListener('abort', () => ac.abort());
+      },
+      onSuccess(x) {
+        onSuccess(x);
+        controller.abort();
+      },
+      onError(x) {
+        if (typeof bipredicate === 'function') {
+          const result = bipredicate(retries, x);
+
+          if (result) {
+            sub();
+          } else {
+            onError(x);
+            controller.abort();
+          }
+        } else {
+          sub();
+        }
+      },
+    });
   };
 
   sub();
@@ -1547,7 +1559,7 @@ function subscribeActual$v(observer) {
 /**
  * @ignore
  */
-const retry = (source, bipredicate) => {
+var retry = (source, bipredicate) => {
   const single = new Single();
   single.source = source;
   single.bipredicate = bipredicate;
@@ -1561,41 +1573,53 @@ const retry = (source, bipredicate) => {
 function subscribeActual$w(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { source, other } = this;
 
-  if (!disposable.isDisposed()) {
-    other.subscribeWith({
-      onSubscribe(d) {
-        disposable.add(d);
-      },
-      onSuccess() {
+  other.subscribeWith({
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
+    },
+    onSuccess() {
+      if (!signal.aborted) {
         onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
-        disposable.dispose();
-      },
-      onError(x) {
+        controller.abort();
+      }
+    },
+    onError(x) {
+      if (!signal.aborted) {
         onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
-        disposable.dispose();
-      },
-    });
+        controller.abort();
+      }
+    },
+  });
 
-    source.subscribeWith({
-      onSubscribe(d) {
-        disposable.add(d);
-      },
-      onSuccess(x) {
+  source.subscribeWith({
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
+    },
+    onSuccess(x) {
+      if (!signal.aborted) {
         onSuccess(x);
-        disposable.dispose();
-      },
-      onError(x) {
+        controller.abort();
+      }
+    },
+    onError(x) {
+      if (!signal.aborted) {
         onError(x);
-        disposable.dispose();
-      },
-    });
-  }
+        controller.abort();
+      }
+    },
+  });
 }
 
 /**
@@ -1619,27 +1643,27 @@ const takeUntil = (source, other) => {
 function subscribeActual$x(observer) {
   const { onSuccess, onSubscribe } = cleanObserver(observer);
 
-  let timeout;
 
-  const disposable = new SimpleDisposable(() => {
-    if (typeof timeout !== 'undefined') {
-      clearTimeout(timeout);
-    }
-  });
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
 
-  if (!disposable.isDisposed()) {
-    timeout = setTimeout(() => {
-      onSuccess(0);
-      disposable.dispose();
-    }, this.amount);
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
   }
+
+  const timeout = setTimeout(onSuccess, this.amount, 0);
+
+  signal.addEventListener('abort', () => {
+    clearTimeout(timeout);
+  });
 }
 /**
  * @ignore
  */
-const timer = (amount) => {
+var timer = (amount) => {
   if (typeof amount !== 'number') {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
@@ -1657,40 +1681,46 @@ function subscribeActual$y(observer) {
 
   const { amount } = this;
 
-  let timeout;
+  const controller = new AbortController();
 
-  const disposable = new SimpleDisposable(() => {
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
+
+  const timeout = setTimeout(
+    () => {
+      onError(new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'));
+      controller.abort();
+    },
+    amount,
+  );
+
+  signal.addEventListener('abort', () => {
     clearTimeout(timeout);
   });
 
-  const err = (x) => {
-    onError(x);
-    disposable.dispose();
-  };
-
-  timeout = setTimeout(
-    err,
-    amount,
-    new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'),
-  );
-
-  onSubscribe(disposable);
-
   this.source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
       onSuccess(x);
-      disposable.dispose();
+      controller.abort();
     },
-    onError: err,
+    onError(x) {
+      onError(x);
+      controller.abort();
+    },
   });
 }
 /**
  * @ignore
  */
-const timeout = (source, amount) => {
+var timeout = (source, amount) => {
   if (typeof amount !== 'number') {
     return source;
   }
@@ -1710,9 +1740,15 @@ function subscribeActual$z(observer) {
 
   const result = [];
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { sources, zipper } = this;
 
@@ -1720,49 +1756,48 @@ function subscribeActual$z(observer) {
 
   if (size === 0) {
     onError(new Error('Single.zip: empty iterable'));
-    disposable.dispose();
+    controller.abort();
     return;
   }
   let pending = size;
 
   for (let i = 0; i < size; i += 1) {
-    if (disposable.isDisposed()) {
+    if (signal.aborted) {
       return;
     }
     const single = sources[i];
 
     if (single instanceof Single) {
       single.subscribeWith({
-        onSubscribe(d) {
-          disposable.add(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
-          if (!disposable.isDisposed()) {
-            result[i] = x;
-            pending -= 1;
-            if (pending === 0) {
-              let r;
-              try {
-                r = zipper(result);
-                if (typeof r === 'undefined') {
-                  throw new Error('Single.zip: zipper function returned an undefined value.');
-                }
-              } catch (e) {
-                onError(e);
-                disposable.dispose();
-                return;
+          if (signal.aborted) {
+            return;
+          }
+          result[i] = x;
+          pending -= 1;
+          if (pending === 0) {
+            let r;
+            try {
+              r = zipper(result);
+              if (typeof r === 'undefined') {
+                throw new Error('Single.zip: zipper function returned an undefined value.');
               }
-              onSuccess(r);
-              disposable.dispose();
+            } catch (e) {
+              onError(e);
+              controller.abort();
+              return;
             }
+            onSuccess(r);
+            controller.abort();
           }
         },
         onError(x) {
-          if (!disposable.isDisposed()) {
-            onError(x);
-            disposable.dispose();
-          }
+          onError(x);
+          controller.abort();
         },
       });
     } else if (typeof single !== 'undefined') {
@@ -1770,7 +1805,7 @@ function subscribeActual$z(observer) {
       pending -= 1;
     } else {
       onError(new Error('Single.zip: One of the sources is undefined.'));
-      disposable.dispose();
+      controller.abort();
       break;
     }
   }
@@ -1778,7 +1813,7 @@ function subscribeActual$z(observer) {
 /**
  * @ignore
  */
-const zip = (sources, zipper) => {
+var zip = (sources, zipper) => {
   if (!isIterable(sources)) {
     return error(new Error('Single.zip: sources is not Iterable.'));
   }
@@ -1806,86 +1841,90 @@ function subscribeActual$A(observer) {
   let SA;
   let SB;
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { source, other, zipper } = this;
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        SA = x;
+      if (signal.aborted) {
+        return;
+      }
+      SA = x;
 
-        if (typeof SB !== 'undefined') {
-          let result;
+      if (typeof SB !== 'undefined') {
+        let result;
 
-          try {
-            result = zipper(SA, SB);
+        try {
+          result = zipper(SA, SB);
 
-            if (typeof result === 'undefined') {
-              throw new Error('Single.zipWith: zipper function returned an undefined value.');
-            }
-          } catch (e) {
-            onError(e);
-            disposable.dispose();
-            return;
+          if (typeof result === 'undefined') {
+            throw new Error('Single.zipWith: zipper function returned an undefined value.');
           }
-          onSuccess(result);
-          disposable.dispose();
+        } catch (e) {
+          onError(e);
+          controller.abort();
+          return;
         }
+        onSuccess(result);
+        controller.abort();
       }
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        onError(x);
-        disposable.dispose();
-      }
+      onError(x);
+      controller.abort();
     },
   });
 
   other.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
-      if (!disposable.isDisposed()) {
-        SB = x;
+      if (signal.aborted) {
+        return;
+      }
+      SB = x;
 
-        if (typeof SA !== 'undefined') {
-          let result;
+      if (typeof SA !== 'undefined') {
+        let result;
 
-          try {
-            result = zipper(SA, SB);
+        try {
+          result = zipper(SA, SB);
 
-            if (typeof result === 'undefined') {
-              throw new Error('Single.zipWith: zipper function returned an undefined value.');
-            }
-          } catch (e) {
-            onError(e);
-            disposable.dispose();
-            return;
+          if (typeof result === 'undefined') {
+            throw new Error('Single.zipWith: zipper function returned an undefined value.');
           }
-          onSuccess(result);
-          disposable.dispose();
+        } catch (e) {
+          onError(e);
+          controller.abort();
+          return;
         }
+        onSuccess(result);
+        controller.abort();
       }
     },
     onError(x) {
-      if (!disposable.isDisposed()) {
-        onError(x);
-        disposable.dispose();
-      }
+      onError(x);
+      controller.abort();
     },
   });
 }
 /**
  * @ignore
  */
-const zipWith = (source, other, zipper) => {
+var zipWith = (source, other, zipper) => {
   if (!(other instanceof Single)) {
     return source;
   }
@@ -1952,8 +1991,8 @@ const zipWith = (source, other, zipper) => {
  * by onError.
  *
  * Like Observable, a running Single can be stopped through
- * the Disposable instance provided to consumers through
- * Observer.onSubscribe(Disposable).
+ * the AbortController instance provided to consumers through
+ * Observer.onSubscribe(AbortController).
  *
  * Singles are cold by default, but using a toPromise method,
  * you can achieve a hot-like Single.
@@ -2178,13 +2217,13 @@ class Single {
    * @returns {Single}
    */
   doFinally(callable) {
-    return doAfterTerminate$1(this, callable);
+    return doFinally(this, callable);
   }
 
   /**
    * Calls the shared function if a Observer
-   * subscribed to the current Single disposes
-   * the common Disposable it received via
+   * subscribed to the current Single aborts
+   * the common AbortController it received via
    * onSubscribe.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
@@ -2193,8 +2232,8 @@ class Single {
    * the function called when the subscription is disposed
    * @returns {Single}
    */
-  doOnDispose(callable) {
-    return doOnDispose(this, callable);
+  doOnAbort(callable) {
+    return doOnAbort(this, callable);
   }
 
   /**
@@ -2227,14 +2266,14 @@ class Single {
   }
 
   /**
-   * Calls the shared function with the Disposable
+   * Calls the shared function with the AbortController
    * sent through the onSubscribe for each Observer
    * that subscribes to the current Single.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSubscribe.png" class="diagram">
    *
-   * @param {!function(x: Disposable)} callable
-   * the function called with the Disposable sent via onSubscribe
+   * @param {!function(x: AbortController)} callable
+   * the function called with the AbortController sent via onSubscribe
    * @returns {Single}
    */
   doOnSubscribe(callable) {
@@ -2566,7 +2605,7 @@ class Single {
    *
    * The onSubscribe method is called when subscribeWith
    * or subscribe is executed. This method receives an
-   * object that implements the Disposable interface.
+   * AbortController instance.
    *
    * @param {!Object} observer
    * @returns {undefined}
@@ -2592,19 +2631,35 @@ class Single {
    * @param {?function(x: any)} onError
    * the function you have designed to accept any error
    * notification from the Single
-   * @returns {Disposable}
-   * a Disposable reference can request the Single stop work.
+   * @returns {AbortController}
+   * an AbortController reference can request the Single to abort.
    */
   subscribe(onSuccess, onError) {
-    const disposable = new SimpleDisposable();
+    const controller = new AbortController();
+    let once = false;
     this.subscribeActual({
-      onSubscribe(d) {
-        disposable.setDisposable(d);
+      onSubscribe(ac) {
+        ac.signal.addEventListener('abort', () => {
+          if (!once) {
+            once = true;
+            if (!controller.signal.aborted) {
+              controller.abort();
+            }
+          }
+        });
+        controller.signal.addEventListener('abort', () => {
+          if (!once) {
+            once = true;
+            if (!ac.signal.aborted) {
+              ac.abort();
+            }
+          }
+        });
       },
       onSuccess,
       onError,
     });
-    return disposable;
+    return controller;
   }
 
   /**
@@ -2734,11 +2789,6 @@ class Single {
     return this.toPromise().catch(onReject);
   }
 }
-
-/**
- * @interface
- * Represents a disposable/cancellable state.
- */
 
 /**
  * @interface
