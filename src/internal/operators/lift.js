@@ -24,7 +24,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const lift = (source, operator) => {
+export default (source, operator) => {
   if (typeof operator !== 'function') {
     return source;
   }
@@ -35,5 +35,3 @@ const lift = (source, operator) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default lift;
