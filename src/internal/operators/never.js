@@ -1,11 +1,24 @@
-import { neverDisposed } from '../utils';
+/* eslint-disable class-methods-use-this */
 import Single from '../../single';
+
+const SIGNAL = {
+  aborted: false,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  onabort: () => {},
+};
+
+
+const CONTROLLER = {
+  signal: SIGNAL,
+  abort: () => {},
+};
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  observer.onSubscribe(neverDisposed);
+  observer.onSubscribe(CONTROLLER);
 }
 /**
  * @ignore
@@ -14,12 +27,10 @@ let INSTANCE;
 /**
  * @ignore
  */
-const never = () => {
+export default () => {
   if (typeof INSTANCE === 'undefined') {
     INSTANCE = new Single();
     INSTANCE.subscribeActual = subscribeActual.bind(INSTANCE);
   }
   return INSTANCE;
 };
-
-export default never;
