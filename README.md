@@ -71,6 +71,9 @@ npm run build
 ```
 
 ## Changelogs
+* 0.3.0
+  - Disposable deprecated. Single now uses AbortController for representing state of disposition.
+  - Renamed doOnDispose to doOnAbort
 * 0.2.0
   - onError (both Observer and Emitter) now only accepts Error instances.
   - if no onError function is provided for the subscription, the error to be received is thrown instead.
