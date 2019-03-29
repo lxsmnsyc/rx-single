@@ -663,7 +663,7 @@ export default class Single {
    * If no predicate is provided, repeatedly re-subscribes to
    * the current Single indefinitely if it fails with an onError.
    *
-   * @param {?function(retries: number, err: any):boolean} predicate
+   * @param {?function(retries: number, err: Error):boolean} predicate
    * the predicate called with the resubscription count and the failure
    * value and should return true if a resubscription should happen.
    * @returns {Single}
@@ -849,7 +849,7 @@ export default class Single {
    * and attaches callbacks to it.
    *
    * @param {!function(x: any):any} onFulfill
-   * @param {?function(x: any):any} onReject
+   * @param {?function(x: Error):any} onReject
    * @returns {Promise}
    */
   then(onFulfill, onReject) {
@@ -860,7 +860,7 @@ export default class Single {
    * Converts the Single to a Promise instance
    * and attaches an onRejection callback to it.
    *
-   * @param {!function(x: any):any} onReject
+   * @param {!function(x: Error):any} onReject
    * @returns {Promise}
    */
   catch(onReject) {
