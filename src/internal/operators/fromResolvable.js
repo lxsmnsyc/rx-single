@@ -1,15 +1,20 @@
-import { onErrorHandler, onSuccessHandler, SimpleDisposable } from '../utils';
+import AbortController from 'abort-controller';
+import { onErrorHandler, onSuccessHandler } from '../utils';
 import Single from '../../single';
 import { error } from '../operators';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
 
-  this.disposable = disposable;
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  this.controller = controller;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
@@ -21,7 +26,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const fromResolvable = (subscriber) => {
+export default (subscriber) => {
   if (typeof subscriber !== 'function') {
     return error(new Error('Single.fromResolvable: expects a function.'));
   }
@@ -30,5 +35,3 @@ const fromResolvable = (subscriber) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default fromResolvable;
