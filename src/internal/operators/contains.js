@@ -32,7 +32,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const contains = (source, value, comparer) => {
+export default (source, value, comparer) => {
   if (typeof value === 'undefined') {
     return source;
   }
@@ -49,5 +49,3 @@ const contains = (source, value, comparer) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default contains;
