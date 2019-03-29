@@ -1,5 +1,5 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
 
 /**
  * @ignore
@@ -7,32 +7,42 @@ import { SimpleDisposable } from '../utils';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
+  const { amount, doDelayError } = this;
+
   let timeout;
 
-  const disposable = new SimpleDisposable(() => {
+  const controller = new AbortController();
+
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
+
+  signal.addEventListener('abort', () => {
     if (typeof timeout !== 'undefined') {
       clearTimeout(timeout);
     }
   });
 
-  const { amount, doDelayError } = this;
-
-  onSubscribe(disposable);
-
   this.source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => {
+        ac.abort();
+      });
     },
     onSuccess(x) {
       timeout = setTimeout(() => {
         onSuccess(x);
-        disposable.dispose();
+        controller.abort();
       }, amount);
     },
     onError(x) {
       timeout = setTimeout(() => {
         onError(x);
-        disposable.dispose();
+        controller.abort();
       }, doDelayError ? amount : 0);
     },
   });
@@ -40,7 +50,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const delay = (source, amount, doDelayError) => {
+export default (source, amount, doDelayError) => {
   if (typeof amount !== 'number') {
     return source;
   }
@@ -51,5 +61,3 @@ const delay = (source, amount, doDelayError) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default delay;
