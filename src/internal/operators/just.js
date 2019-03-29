@@ -11,7 +11,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const just = (value) => {
+export default (value) => {
   if (typeof value === 'undefined') {
     return error(new Error('Single.just: received an undefined value.'));
   }
@@ -20,5 +20,3 @@ const just = (value) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default just;
