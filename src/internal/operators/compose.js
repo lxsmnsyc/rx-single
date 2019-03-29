@@ -4,7 +4,7 @@ import { error } from '../operators';
 /**
  * @ignore
  */
-const compose = (source, transformer) => {
+export default (source, transformer) => {
   if (typeof transformer !== 'function') {
     return source;
   }
@@ -23,5 +23,3 @@ const compose = (source, transformer) => {
 
   return result;
 };
-
-export default compose;
