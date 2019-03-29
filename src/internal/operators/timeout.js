@@ -1,5 +1,7 @@
+
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -9,40 +11,46 @@ function subscribeActual(observer) {
 
   const { amount } = this;
 
-  let timeout;
+  const controller = new AbortController();
 
-  const disposable = new SimpleDisposable(() => {
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
+
+  const timeout = setTimeout(
+    () => {
+      onError(new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'));
+      controller.abort();
+    },
+    amount,
+  );
+
+  signal.addEventListener('abort', () => {
     clearTimeout(timeout);
   });
 
-  const err = (x) => {
-    onError(x);
-    disposable.dispose();
-  };
-
-  timeout = setTimeout(
-    err,
-    amount,
-    new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'),
-  );
-
-  onSubscribe(disposable);
-
   this.source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
       onSuccess(x);
-      disposable.dispose();
+      controller.abort();
     },
-    onError: err,
+    onError(x) {
+      onError(x);
+      controller.abort();
+    },
   });
 }
 /**
  * @ignore
  */
-const timeout = (source, amount) => {
+export default (source, amount) => {
   if (typeof amount !== 'number') {
     return source;
   }
@@ -52,5 +60,3 @@ const timeout = (source, amount) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default timeout;
