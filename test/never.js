@@ -27,14 +27,5 @@ describe('Single', () => {
         () => done(false),
       );
     });
-    /**
-     *
-     */
-    it('should never be disposable.', () => {
-      const single = Single.never();
-      const disposable = single.subscribe();
-      disposable.dispose();
-      assert(!disposable.isDisposed());
-    });
   });
 });
