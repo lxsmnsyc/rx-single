@@ -1,7 +1,6 @@
 /* eslint-disable no-undef */
 import assert from 'assert';
 import Single from '../src/single';
-import { SimpleDisposable } from '../src/internal/utils';
 
 /**
  *
@@ -55,18 +54,17 @@ describe('Single', () => {
     /**
      *
      */
-    it('should be disposed successfully if emitter is disposed before any signal.', (done) => {
+    it('should be aborted successfully if emitter is aborted before any signal.', (done) => {
       const single = Single.create((e) => {
         setTimeout(e.onSuccess, 100, true);
-        e.setDisposable(new SimpleDisposable());
-        e.dispose();
+        e.abort();
       });
 
-      const disposable = single.subscribe(
+      const controller = single.subscribe(
         () => done(false),
         () => done(false),
       );
-      if (disposable.isDisposed()) {
+      if (controller.signal.aborted) {
         done();
       }
     });
