@@ -21,7 +21,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const doOnError = (source, callable) => {
+export default (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -32,5 +32,3 @@ const doOnError = (source, callable) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default doOnError;
