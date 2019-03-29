@@ -24,7 +24,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const doAfterTerminate = (source, callable) => {
+export default (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
@@ -35,5 +35,3 @@ const doAfterTerminate = (source, callable) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default doAfterTerminate;
