@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import {
-  onErrorHandler, onSuccessHandler, isPromise, SimpleDisposable,
+  onErrorHandler, onSuccessHandler, isPromise,
 } from '../utils';
 import Single from '../../single';
 import { error, fromPromise } from '../operators';
@@ -10,11 +11,15 @@ import { error, fromPromise } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  onSubscribe(controller);
 
-  this.disposable = disposable;
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  this.controller = controller;
   this.onSuccess = onSuccess;
   this.onError = onError;
 
@@ -38,7 +43,7 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const fromCallable = (callable) => {
+export default (callable) => {
   if (typeof callable !== 'function') {
     return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
@@ -47,5 +52,3 @@ const fromCallable = (callable) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default fromCallable;
