@@ -56,11 +56,11 @@ describe('Single', () => {
       const source = Single.timer(100);
       const single = source.doFinally(() => done());
 
-      const disposable = single.subscribe(
+      const controller = single.subscribe(
         () => done(false),
         () => done(false),
       );
-      disposable.dispose();
+      controller.abort();
     });
   });
 });
