@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -7,38 +8,49 @@ import { SimpleDisposable, cleanObserver } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { source, bipredicate } = this;
 
   let retries = 0;
 
   const sub = () => {
-    if (!disposable.isDisposed()) {
-      retries += 1;
-
-      source.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
-        },
-        onSuccess,
-        onError(x) {
-          if (typeof bipredicate === 'function') {
-            const result = bipredicate(retries, x);
-
-            if (result) {
-              sub();
-            } else {
-              onError(x);
-            }
-          } else {
-            sub();
-          }
-        },
-      });
+    if (signal.aborted) {
+      return;
     }
+    retries += 1;
+
+    source.subscribeWith({
+      onSubscribe(ac) {
+        signal.addEventListener('abort', () => ac.abort());
+      },
+      onSuccess(x) {
+        onSuccess(x);
+        controller.abort();
+      },
+      onError(x) {
+        if (typeof bipredicate === 'function') {
+          const result = bipredicate(retries, x);
+
+          if (result) {
+            sub();
+          } else {
+            onError(x);
+            controller.abort();
+          }
+        } else {
+          sub();
+        }
+      },
+    });
   };
 
   sub();
@@ -47,12 +59,10 @@ function subscribeActual(observer) {
 /**
  * @ignore
  */
-const retry = (source, bipredicate) => {
+export default (source, bipredicate) => {
   const single = new Single();
   single.source = source;
   single.bipredicate = bipredicate;
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default retry;
