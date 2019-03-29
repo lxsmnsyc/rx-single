@@ -16,7 +16,7 @@ function subscribeActual(observer) {
         result = item(x);
 
         if (typeof result === 'undefined') {
-          throw new Error(new Error('Single.onErrorReturn: returned an non-Single.'));
+          throw new Error(new Error('Single.onErrorReturn: returned an undefined value.'));
         }
       } catch (e) {
         onError([x, e]);
