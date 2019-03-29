@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { error } from '../operators';
+import error from './error';
 
 /**
  * @ignore
