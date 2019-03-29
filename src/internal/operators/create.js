@@ -3,7 +3,7 @@ import {
   onErrorHandler, onSuccessHandler, cleanObserver,
 } from '../utils';
 import Single from '../../single';
-import { error } from '../operators';
+import error from './error';
 
 /**
  * @ignore
