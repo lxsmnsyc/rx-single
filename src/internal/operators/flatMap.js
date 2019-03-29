@@ -1,5 +1,5 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { SimpleDisposable } from '../utils';
 
 /**
  * @ignore
@@ -7,15 +7,21 @@ import { SimpleDisposable } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onError, onSuccess } = observer;
 
-  const disposable = new SimpleDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
 
   const { mapper, source } = this;
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.setDisposable(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
     onSuccess(x) {
       let result;
@@ -30,21 +36,30 @@ function subscribeActual(observer) {
         return;
       }
       result.subscribeWith({
-        onSubscribe(d) {
-          disposable.setDisposable(d);
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
         },
-        onSuccess,
-        onError,
+        onSuccess(v) {
+          onSuccess(v);
+          controller.abort();
+        },
+        onError(v) {
+          onError(v);
+          controller.abort();
+        },
       });
     },
-    onError,
+    onError(v) {
+      onError(v);
+      controller.abort();
+    },
   });
 }
 
 /**
  * @ignore
  */
-const flatMap = (source, mapper) => {
+export default (source, mapper) => {
   if (typeof mapper !== 'function') {
     return source;
   }
@@ -55,5 +70,3 @@ const flatMap = (source, mapper) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default flatMap;
