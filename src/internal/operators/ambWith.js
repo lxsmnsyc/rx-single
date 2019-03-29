@@ -1,5 +1,6 @@
+import AbortController from 'abort-controller';
 import Single from '../../single';
-import { CompositeDisposable, cleanObserver } from '../utils';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
@@ -7,43 +8,50 @@ import { CompositeDisposable, cleanObserver } from '../utils';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const disposable = new CompositeDisposable();
+  const controller = new AbortController();
 
-  onSubscribe(disposable);
+  const { signal } = controller;
+
+  onSubscribe(controller);
+
+  if (signal.aborted) {
+    return;
+  }
+
+  const sharedSuccess = (x) => {
+    if (!signal.aborted) {
+      onSuccess(x);
+      controller.abort();
+    }
+  };
+  const sharedError = (x) => {
+    if (!signal.aborted) {
+      onError(x);
+      controller.abort();
+    }
+  };
 
   const { source, other } = this;
 
   source.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
-    onSuccess(x) {
-      onSuccess(x);
-      disposable.dispose();
-    },
-    onError(x) {
-      onError(x);
-      disposable.dispose();
-    },
+    onSuccess: sharedSuccess,
+    onError: sharedError,
   });
   other.subscribeWith({
-    onSubscribe(d) {
-      disposable.add(d);
+    onSubscribe(ac) {
+      signal.addEventListener('abort', () => ac.abort());
     },
-    onSuccess(x) {
-      onSuccess(x);
-      disposable.dispose();
-    },
-    onError(x) {
-      onError(x);
-      disposable.dispose();
-    },
+    onSuccess: sharedSuccess,
+    onError: sharedError,
   });
 }
 /**
  * @ignore
  */
-const ambWith = (source, other) => {
+export default (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
@@ -53,5 +61,3 @@ const ambWith = (source, other) => {
   single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
-
-export default ambWith;
