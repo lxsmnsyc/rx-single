@@ -1,5 +1,6 @@
 assets
 coverage
+.nyc_output
 docs
 src
 test
