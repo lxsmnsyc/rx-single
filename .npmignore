@@ -9,4 +9,5 @@ test
 .esdoc.old.json
 .eslintrc.json
 .travis.yml
-.appveyor.yml
+appveyor.yml
+.nvmrc
