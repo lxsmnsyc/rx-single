@@ -1,0 +1,11 @@
+assets
+coverage
+docs
+src
+test
+.babelrc
+.esdoc.json
+.esdoc.old.json
+.eslintrc.json
+.travis.yml
+.appveyor.yml
