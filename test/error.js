@@ -26,7 +26,7 @@ describe('Single', () => {
 
       single.subscribe(
         () => done(false),
-        e => (typeof e !== 'undefined' ? done() : done(false)),
+        () => done(),
       );
     });
     /**
@@ -37,7 +37,7 @@ describe('Single', () => {
 
       single.subscribe(
         () => done(false),
-        e => (e === 'Single.error received an undefined value.' ? done() : done(false)),
+        () => done(),
       );
     });
     /**
@@ -48,7 +48,7 @@ describe('Single', () => {
 
       single.subscribe(
         () => done(false),
-        e => (e === 'Single.error: Error supplier returned an undefined value.' ? done() : done(false)),
+        () => done(),
       );
     });
     /**
@@ -61,7 +61,7 @@ describe('Single', () => {
 
       single.subscribe(
         () => done(false),
-        e => (e instanceof Error ? done() : done(false)),
+        () => done(),
       );
     });
   });
