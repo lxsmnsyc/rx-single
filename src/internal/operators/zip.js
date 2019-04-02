@@ -55,8 +55,8 @@ function subscribeActual(observer) {
             let r;
             try {
               r = zipper(result);
-              if (typeof r === 'undefined') {
-                throw new Error('Single.zip: zipper function returned an undefined value.');
+              if (r == null) {
+                throw new Error('Single.zip: zipper function returned a null value.');
               }
             } catch (e) {
               onError(e);
@@ -72,7 +72,7 @@ function subscribeActual(observer) {
           controller.abort();
         },
       });
-    } else if (typeof single !== 'undefined') {
+    } else if (single != null) {
       result[i] = single;
       pending -= 1;
     } else {
