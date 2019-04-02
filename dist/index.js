@@ -985,7 +985,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$j(observer) {
-    const { onSubscribe, onError, onSuccess } = observer;
+    const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
     const controller = new AbortController();
 
