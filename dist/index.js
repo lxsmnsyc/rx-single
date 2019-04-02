@@ -235,7 +235,11 @@ var Single = (function (AbortController) {
     });
     other.subscribeWith({
       onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
+        if (signal.aborted) {
+          ac.abort();
+        } else {
+          signal.addEventListener('abort', () => ac.abort());
+        }
       },
       onSuccess: sharedSuccess,
       onError: sharedError,
@@ -1887,7 +1891,11 @@ var Single = (function (AbortController) {
 
     other.subscribeWith({
       onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
+        if (signal.aborted) {
+          ac.abort();
+        } else {
+          signal.addEventListener('abort', () => ac.abort());
+        }
       },
       onSuccess(x) {
         if (signal.aborted) {
