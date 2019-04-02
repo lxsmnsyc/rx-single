@@ -71,6 +71,8 @@ npm run build
 ```
 
 ## Changelogs
+* 0.4.0
+  - Null values are now guarded. Previously, only undefined values are guarded.
 * 0.3.0
   - Disposable deprecated. Single now uses AbortController for representing state of disposition.
   - Renamed doOnDispose to doOnAbort
