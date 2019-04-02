@@ -37,14 +37,14 @@ function subscribeActual(observer) {
       }
       SA = x;
 
-      if (typeof SB !== 'undefined') {
+      if (SB != null) {
         let result;
 
         try {
           result = zipper(SA, SB);
 
-          if (typeof result === 'undefined') {
-            throw new Error('Single.zipWith: zipper function returned an undefined value.');
+          if (result == null) {
+            throw new Error('Single.zipWith: zipper function returned a null value.');
           }
         } catch (e) {
           onError(e);
@@ -75,14 +75,14 @@ function subscribeActual(observer) {
       }
       SB = x;
 
-      if (typeof SA !== 'undefined') {
+      if (SA != null) {
         let result;
 
         try {
           result = zipper(SA, SB);
 
-          if (typeof result === 'undefined') {
-            throw new Error('Single.zipWith: zipper function returned an undefined value.');
+          if (result == null) {
+            throw new Error('Single.zipWith: zipper function returned a null value.');
           }
         } catch (e) {
           onError(e);
