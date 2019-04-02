@@ -20,8 +20,8 @@ function subscribeActual(observer) {
       let result;
       try {
         result = mapper(x);
-        if (typeof result === 'undefined') {
-          throw new Error('Single.map: mapper function returned an undefined value.');
+        if (result == null) {
+          throw new Error('Single.map: mapper function returned a null value.');
         }
       } catch (e) {
         onError(e);
