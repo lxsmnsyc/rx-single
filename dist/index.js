@@ -1592,34 +1592,30 @@ var Single = (function (AbortController) {
         signal.addEventListener('abort', () => ac.abort());
       },
       onSuccess() {
-        if (!signal.aborted) {
-          onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
-          controller.abort();
-        }
+        onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
+        controller.abort();
       },
       onError(x) {
-        if (!signal.aborted) {
-          onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
-          controller.abort();
-        }
+        onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
+        controller.abort();
       },
     });
 
     source.subscribeWith({
       onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
+        if (signal.aborted) {
+          ac.abort();
+        } else {
+          signal.addEventListener('abort', () => ac.abort());
+        }
       },
       onSuccess(x) {
-        if (!signal.aborted) {
-          onSuccess(x);
-          controller.abort();
-        }
+        onSuccess(x);
+        controller.abort();
       },
       onError(x) {
-        if (!signal.aborted) {
-          onError(x);
-          controller.abort();
-        }
+        onError(x);
+        controller.abort();
       },
     });
   }
