@@ -29,7 +29,7 @@ var Single = (function (AbortController) {
     }
     try {
       if (typeof value === 'undefined') {
-        onError('onSuccess called with undefined.');
+        onError('onSuccess called with a null value.');
       } else {
         onSuccess(value);
       }
@@ -109,8 +109,8 @@ var Single = (function (AbortController) {
     try {
       err = this.supplier();
 
-      if (typeof err === 'undefined') {
-        throw new Error('Single.error: Error supplier returned an undefined value.');
+      if (err == null) {
+        throw new Error('Single.error: Error supplier returned a null value.');
       }
     } catch (e) {
       err = e;
@@ -314,10 +314,10 @@ var Single = (function (AbortController) {
       onSubscribe(controller);
 
       const { value, error } = this;
-      if (typeof value !== 'undefined') {
+      if (value != null) {
         onSuccess(value);
       }
-      if (typeof error !== 'undefined') {
+      if (error != null) {
         onError(error);
       }
       controller.abort();
@@ -427,7 +427,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var contains = (source, value, comparer) => {
-    if (typeof value === 'undefined') {
+    if (value == null) {
       return source;
     }
 
@@ -462,7 +462,7 @@ var Single = (function (AbortController) {
       err = e;
     }
 
-    if (typeof err !== 'undefined') {
+    if (err != null) {
       immediateError(observer, err);
     } else {
       result.subscribeWith({
@@ -1178,8 +1178,8 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var just = (value) => {
-    if (typeof value === 'undefined') {
-      return error(new Error('Single.just: received an undefined value.'));
+    if (value == null) {
+      return error(new Error('Single.just: received a null value.'));
     }
     const single = new Single();
     single.value = value;
@@ -1241,8 +1241,8 @@ var Single = (function (AbortController) {
         let result;
         try {
           result = mapper(x);
-          if (typeof result === 'undefined') {
-            throw new Error('Single.map: mapper function returned an undefined value.');
+          if (result == null) {
+            throw new Error('Single.map: mapper function returned a null value.');
           }
         } catch (e) {
           onError(e);
@@ -1358,7 +1358,7 @@ var Single = (function (AbortController) {
         if (typeof resumeIfError === 'function') {
           try {
             result = resumeIfError(x);
-            if (typeof result === 'undefined') {
+            if (!(result instanceof Single)) {
               throw new Error('Single.onErrorResumeNext: returned an non-Single.');
             }
           } catch (e) {
@@ -1414,8 +1414,8 @@ var Single = (function (AbortController) {
         try {
           result = item(x);
 
-          if (typeof result === 'undefined') {
-            throw new Error(new Error('Single.onErrorReturn: returned an undefined value.'));
+          if (result == null) {
+            throw new Error(new Error('Single.onErrorReturn: returned a null value.'));
           }
         } catch (e) {
           onError([x, e]);
@@ -1457,7 +1457,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var onErrorReturnItem = (source, item) => {
-    if (typeof item === 'undefined') {
+    if (item == null) {
       return source;
     }
 
@@ -1781,8 +1781,8 @@ var Single = (function (AbortController) {
               let r;
               try {
                 r = zipper(result);
-                if (typeof r === 'undefined') {
-                  throw new Error('Single.zip: zipper function returned an undefined value.');
+                if (r == null) {
+                  throw new Error('Single.zip: zipper function returned a null value.');
                 }
               } catch (e) {
                 onError(e);
@@ -1798,7 +1798,7 @@ var Single = (function (AbortController) {
             controller.abort();
           },
         });
-      } else if (typeof single !== 'undefined') {
+      } else if (single != null) {
         result[i] = single;
         pending -= 1;
       } else {
@@ -1861,14 +1861,14 @@ var Single = (function (AbortController) {
         }
         SA = x;
 
-        if (typeof SB !== 'undefined') {
+        if (SB != null) {
           let result;
 
           try {
             result = zipper(SA, SB);
 
-            if (typeof result === 'undefined') {
-              throw new Error('Single.zipWith: zipper function returned an undefined value.');
+            if (result == null) {
+              throw new Error('Single.zipWith: zipper function returned a null value.');
             }
           } catch (e) {
             onError(e);
@@ -1899,14 +1899,14 @@ var Single = (function (AbortController) {
         }
         SB = x;
 
-        if (typeof SA !== 'undefined') {
+        if (SA != null) {
           let result;
 
           try {
             result = zipper(SA, SB);
 
-            if (typeof result === 'undefined') {
-              throw new Error('Single.zipWith: zipper function returned an undefined value.');
+            if (result == null) {
+              throw new Error('Single.zipWith: zipper function returned a null value.');
             }
           } catch (e) {
             onError(e);
