@@ -236,7 +236,11 @@ function subscribeActual$2(observer) {
   });
   other.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      if (signal.aborted) {
+        ac.abort();
+      } else {
+        signal.addEventListener('abort', () => ac.abort());
+      }
     },
     onSuccess: sharedSuccess,
     onError: sharedError,
@@ -1888,7 +1892,11 @@ function subscribeActual$A(observer) {
 
   other.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      if (signal.aborted) {
+        ac.abort();
+      } else {
+        signal.addEventListener('abort', () => ac.abort());
+      }
     },
     onSuccess(x) {
       if (signal.aborted) {
