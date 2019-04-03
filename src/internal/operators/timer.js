@@ -33,8 +33,7 @@ export default (amount) => {
   if (typeof amount !== 'number') {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.amount = amount;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
