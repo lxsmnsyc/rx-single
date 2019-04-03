@@ -1969,6 +1969,9 @@ var Single = (function (AbortController) {
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.legend.png" class="diagram">
    */
   class Single {
+    /**
+     * @ignore
+     */
     constructor(subscribeActual) {
       this.subscribeActual = subscribeActual;
     }
