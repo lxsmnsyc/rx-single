@@ -47,8 +47,7 @@ export default (callable) => {
   if (typeof callable !== 'function') {
     return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.callable = callable;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
