@@ -15,8 +15,7 @@ export default (value) => {
   if (value == null) {
     return error(new Error('Single.just: received a null value.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.value = value;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
