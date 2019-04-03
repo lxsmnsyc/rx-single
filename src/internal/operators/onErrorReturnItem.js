@@ -22,9 +22,8 @@ export default (source, item) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.item = item;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
