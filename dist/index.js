@@ -603,7 +603,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$9(observer) {
-    const { onSuccess, onError, onSubscribe } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, other } = this;
 
@@ -662,7 +662,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$a(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -695,7 +695,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$b(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -731,7 +731,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$c(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -782,7 +782,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$d(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -815,7 +815,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$e(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -848,7 +848,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$f(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -884,7 +884,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$g(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -917,7 +917,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$h(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -949,7 +949,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$i(observer) {
-    const { onSubscribe, onSuccess, onError } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
 
@@ -1055,7 +1055,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$k(observer) {
-    const { onSuccess, onError, onSubscribe } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const controller = new AbortController();
 
@@ -1103,7 +1103,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$l(observer) {
-    const { onSuccess, onError, onSubscribe } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const controller = new AbortController();
 
@@ -1136,7 +1136,7 @@ var Single = (function (AbortController) {
   };
 
   function subscribeActual$m(observer) {
-    const { onSuccess, onError, onSubscribe } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const controller = new AbortController();
 
