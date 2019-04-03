@@ -51,9 +51,8 @@ export default (source, amount) => {
   if (typeof amount !== 'number') {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.amount = amount;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
