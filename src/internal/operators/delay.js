@@ -1,11 +1,12 @@
 import AbortController from 'abort-controller';
 import Single from '../../single';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount, doDelayError } = this;
 
