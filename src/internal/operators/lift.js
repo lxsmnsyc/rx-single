@@ -29,9 +29,8 @@ export default (source, operator) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.operator = operator;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
