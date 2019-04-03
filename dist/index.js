@@ -486,7 +486,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$7(observer) {
-    const { onSuccess, onError, onSubscribe } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { amount, doDelayError } = this;
 
@@ -547,7 +547,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   function subscribeActual$8(observer) {
-    const { onSuccess, onError, onSubscribe } = observer;
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { amount } = this;
 
