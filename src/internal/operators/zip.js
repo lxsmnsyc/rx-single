@@ -93,9 +93,8 @@ export default (sources, zipper) => {
   if (typeof zipper !== 'function') {
     fn = defaultZipper;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.sources = sources;
   single.zipper = fn;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
