@@ -29,7 +29,7 @@ let INSTANCE;
  */
 export default () => {
   if (typeof INSTANCE === 'undefined') {
-    INSTANCE = new Single();
+    INSTANCE = new Single(subscribeActual);
     INSTANCE.subscribeActual = subscribeActual.bind(INSTANCE);
   }
   return INSTANCE;
