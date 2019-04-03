@@ -26,9 +26,8 @@ export default (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
