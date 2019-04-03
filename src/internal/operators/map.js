@@ -41,9 +41,8 @@ export default (source, mapper) => {
     ms = defaultMapper;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.mapper = ms;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
