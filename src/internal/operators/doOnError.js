@@ -1,10 +1,11 @@
 import Single from '../../single';
+import { cleanObserver } from '../utils';
 
 /**
  * @ignore
  */
 function subscribeActual(observer) {
-  const { onSubscribe, onSuccess, onError } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
 
