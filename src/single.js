@@ -84,6 +84,10 @@ import { isObserver } from './internal/utils';
  * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.legend.png" class="diagram">
  */
 export default class Single {
+  constructor(subscribeActual) {
+    this.subscribeActual = subscribeActual;
+  }
+
   /**
    * Provides an API (via a cold Single) that bridges
    * the reactive world with the callback-style world.
@@ -693,7 +697,7 @@ export default class Single {
    */
   subscribeWith(observer) {
     if (isObserver(observer)) {
-      this.subscribeActual(observer);
+      this.subscribeActual.call(this, observer);
     }
   }
 
@@ -718,7 +722,7 @@ export default class Single {
   subscribe(onSuccess, onError) {
     const controller = new AbortController();
     let once = false;
-    this.subscribeActual({
+    this.subscribeWith({
       onSubscribe(ac) {
         ac.signal.addEventListener('abort', () => {
           if (!once) {
