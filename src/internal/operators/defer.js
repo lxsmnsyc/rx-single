@@ -33,8 +33,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (supplier) => {
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.supplier = supplier;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
