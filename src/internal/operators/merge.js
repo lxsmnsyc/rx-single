@@ -57,8 +57,7 @@ export default (source) => {
     return error(new Error('Single.merge: source is not a Single.'));
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
