@@ -487,7 +487,7 @@ var defer = (supplier) => {
  * @ignore
  */
 function subscribeActual$7(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount, doDelayError } = this;
 
@@ -548,7 +548,7 @@ var delay = (source, amount, doDelayError) => {
  * @ignore
  */
 function subscribeActual$8(observer) {
-  const { onSuccess, onError, onSubscribe } = observer;
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount } = this;
 
