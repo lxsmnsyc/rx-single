@@ -60,9 +60,8 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, bipredicate) => {
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.bipredicate = bipredicate;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
