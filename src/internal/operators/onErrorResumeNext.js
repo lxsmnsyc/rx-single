@@ -66,9 +66,8 @@ export default (source, resumeIfError) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.resumeIfError = resumeIfError;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
