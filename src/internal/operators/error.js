@@ -30,8 +30,7 @@ export default (value) => {
   if (typeof value !== 'function') {
     report = toCallable(report);
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.supplier = report;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
