@@ -65,9 +65,8 @@ export default (source, mapper) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.mapper = mapper;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
