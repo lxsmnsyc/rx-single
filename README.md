@@ -71,6 +71,8 @@ npm run build
 ```
 
 ## Changelogs
+* 0.6.0
+  - Fixed some operators not guarding observers.
 * 0.4.0
   - Null values are now guarded. Previously, only undefined values are guarded.
 * 0.3.0
