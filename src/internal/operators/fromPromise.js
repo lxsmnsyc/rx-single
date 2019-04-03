@@ -34,8 +34,7 @@ export default (promise) => {
   if (!isPromise(promise)) {
     return error(new Error('Single.fromPromise: expects a Promise-like value.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.promise = promise;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
