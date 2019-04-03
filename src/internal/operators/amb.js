@@ -56,8 +56,7 @@ export default (sources) => {
   if (!isIterable(sources)) {
     return error(new Error('Single.amb: sources is not Iterable.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.sources = sources;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
