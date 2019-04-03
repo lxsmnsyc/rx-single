@@ -130,9 +130,8 @@ var error = (value) => {
   if (typeof value !== 'function') {
     report = toCallable(report);
   }
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.supplier = report;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
 
@@ -190,9 +189,8 @@ var amb = (sources) => {
   if (!isIterable(sources)) {
     return error(new Error('Single.amb: sources is not Iterable.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$1);
   single.sources = sources;
-  single.subscribeActual = subscribeActual$1.bind(single);
   return single;
 };
 
@@ -253,10 +251,9 @@ var ambWith = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$2);
   single.source = source;
   single.other = other;
-  single.subscribeActual = subscribeActual$2.bind(single);
   return single;
 };
 
@@ -329,12 +326,11 @@ function subscribeActual$3(observer) {
  * @ignore
  */
 var cache = (source) => {
-  const single = new Single();
+  const single = new Single(subscribeActual$3);
   single.source = source;
   single.cached = false;
   single.subscribed = false;
   single.observers = [];
-  single.subscribeActual = subscribeActual$3.bind(single);
   return single;
 };
 
@@ -367,9 +363,8 @@ var create = (subscriber) => {
   if (typeof subscriber !== 'function') {
     return error(new Error('Single.create: There are no subscribers.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$4);
   single.subscriber = subscriber;
-  single.subscribeActual = subscribeActual$4.bind(single);
   return single;
 };
 
@@ -437,11 +432,10 @@ var contains = (source, value, comparer) => {
     cmp = containsComparer;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$5);
   single.source = source;
   single.value = value;
   single.comparer = cmp;
-  single.subscribeActual = subscribeActual$5.bind(single);
   return single;
 };
 
@@ -477,9 +471,8 @@ function subscribeActual$6(observer) {
  * @ignore
  */
 var defer = (supplier) => {
-  const single = new Single();
+  const single = new Single(subscribeActual$6);
   single.supplier = supplier;
-  single.subscribeActual = subscribeActual$6.bind(single);
   return single;
 };
 
@@ -536,11 +529,10 @@ var delay = (source, amount, doDelayError) => {
   if (typeof amount !== 'number') {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$7);
   single.source = source;
   single.amount = amount;
   single.doDelayError = doDelayError;
-  single.subscribeActual = subscribeActual$7.bind(single);
   return single;
 };
 
@@ -593,10 +585,9 @@ var delaySubscription = (source, amount) => {
   if (typeof amount !== 'number') {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$8);
   single.source = source;
   single.amount = amount;
-  single.subscribeActual = subscribeActual$8.bind(single);
   return single;
 };
 
@@ -652,10 +643,9 @@ var delayUntil = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$9);
   single.source = source;
   single.other = other;
-  single.subscribeActual = subscribeActual$9.bind(single);
   return single;
 };
 
@@ -685,10 +675,9 @@ var doAfterSuccess = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$a);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$a.bind(single);
   return single;
 };
 
@@ -721,10 +710,9 @@ var doAfterTerminate = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$b);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$b.bind(single);
   return single;
 };
 
@@ -772,10 +760,9 @@ var doFinally = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$c);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$c.bind(single);
   return single;
 };
 
@@ -805,10 +792,9 @@ var doOnAbort = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$d);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$d.bind(single);
   return single;
 };
 
@@ -838,10 +824,9 @@ var doOnError = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$e);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$e.bind(single);
   return single;
 };
 
@@ -874,10 +859,9 @@ var doOnEvent = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$f);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$f.bind(single);
   return single;
 };
 
@@ -907,10 +891,9 @@ var doOnSuccess = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$g);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$g.bind(single);
   return single;
 };
 
@@ -939,10 +922,9 @@ var doOnSubscribe = (source, callable) => {
   if (typeof callable !== 'function') {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$h);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$h.bind(single);
   return single;
 };
 
@@ -975,10 +957,9 @@ var doOnTerminate = (source, callable) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$i);
   single.source = source;
   single.callable = callable;
-  single.subscribeActual = subscribeActual$i.bind(single);
   return single;
 };
 
@@ -1045,10 +1026,9 @@ var flatMap = (source, mapper) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$j);
   single.source = source;
   single.mapper = mapper;
-  single.subscribeActual = subscribeActual$j.bind(single);
   return single;
 };
 
@@ -1094,9 +1074,8 @@ var fromCallable = (callable) => {
   if (typeof callable !== 'function') {
     return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$k);
   single.callable = callable;
-  single.subscribeActual = subscribeActual$k.bind(single);
   return single;
 };
 
@@ -1130,9 +1109,8 @@ var fromPromise = (promise) => {
   if (!isPromise(promise)) {
     return error(new Error('Single.fromPromise: expects a Promise-like value.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$l);
   single.promise = promise;
-  single.subscribeActual = subscribeActual$l.bind(single);
   return single;
 };
 
@@ -1163,9 +1141,8 @@ var fromResolvable = (subscriber) => {
   if (typeof subscriber !== 'function') {
     return error(new Error('Single.fromResolvable: expects a function.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$m);
   single.subscriber = subscriber;
-  single.subscribeActual = subscribeActual$m.bind(single);
   return single;
 };
 
@@ -1182,9 +1159,8 @@ var just = (value) => {
   if (value == null) {
     return error(new Error('Single.just: received a null value.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$n);
   single.value = value;
-  single.subscribeActual = subscribeActual$n.bind(single);
   return single;
 };
 
@@ -1216,10 +1192,9 @@ var lift = (source, operator) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$o);
   single.source = source;
   single.operator = operator;
-  single.subscribeActual = subscribeActual$o.bind(single);
   return single;
 };
 
@@ -1263,10 +1238,9 @@ var map = (source, mapper) => {
     ms = defaultMapper;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$p);
   single.source = source;
   single.mapper = ms;
-  single.subscribeActual = subscribeActual$p.bind(single);
   return single;
 };
 
@@ -1324,9 +1298,8 @@ var merge = (source) => {
     return error(new Error('Single.merge: source is not a Single.'));
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$q);
   single.source = source;
-  single.subscribeActual = subscribeActual$q.bind(single);
   return single;
 };
 
@@ -1394,10 +1367,9 @@ var onErrorResumeNext = (source, resumeIfError) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$r);
   single.source = source;
   single.resumeIfError = resumeIfError;
-  single.subscribeActual = subscribeActual$r.bind(single);
   return single;
 };
 
@@ -1434,10 +1406,9 @@ var onErrorReturn = (source, item) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$s);
   single.source = source;
   single.item = item;
-  single.subscribeActual = subscribeActual$s.bind(single);
   return single;
 };
 
@@ -1462,10 +1433,9 @@ var onErrorReturnItem = (source, item) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$t);
   single.source = source;
   single.item = item;
-  single.subscribeActual = subscribeActual$t.bind(single);
   return single;
 };
 
@@ -1499,7 +1469,7 @@ let INSTANCE;
  */
 var never = () => {
   if (typeof INSTANCE === 'undefined') {
-    INSTANCE = new Single();
+    INSTANCE = new Single(subscribeActual$u);
     INSTANCE.subscribeActual = subscribeActual$u.bind(INSTANCE);
   }
   return INSTANCE;
@@ -1563,10 +1533,9 @@ function subscribeActual$v(observer) {
  * @ignore
  */
 var retry = (source, bipredicate) => {
-  const single = new Single();
+  const single = new Single(subscribeActual$v);
   single.source = source;
   single.bipredicate = bipredicate;
-  single.subscribeActual = subscribeActual$v.bind(single);
   return single;
 };
 
@@ -1629,10 +1598,9 @@ const takeUntil = (source, other) => {
     return source;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual$w);
   single.source = source;
   single.other = other;
-  single.subscribeActual = subscribeActual$w.bind(single);
   return single;
 };
 
@@ -1666,9 +1634,8 @@ var timer = (amount) => {
   if (typeof amount !== 'number') {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$x);
   single.amount = amount;
-  single.subscribeActual = subscribeActual$x.bind(single);
   return single;
 };
 
@@ -1723,10 +1690,9 @@ var timeout = (source, amount) => {
   if (typeof amount !== 'number') {
     return source;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$y);
   single.source = source;
   single.amount = amount;
-  single.subscribeActual = subscribeActual$y.bind(single);
   return single;
 };
 
@@ -1820,10 +1786,9 @@ var zip = (sources, zipper) => {
   if (typeof zipper !== 'function') {
     fn = defaultZipper;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$z);
   single.sources = sources;
   single.zipper = fn;
-  single.subscribeActual = subscribeActual$z.bind(single);
   return single;
 };
 
@@ -1935,11 +1900,10 @@ var zipWith = (source, other, zipper) => {
   if (typeof zipper !== 'function') {
     fn = defaultZipper$1;
   }
-  const single = new Single();
+  const single = new Single(subscribeActual$A);
   single.source = source;
   single.other = other;
   single.zipper = fn;
-  single.subscribeActual = subscribeActual$A.bind(single);
   return single;
 };
 
@@ -2006,6 +1970,10 @@ var zipWith = (source, other, zipper) => {
  * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.legend.png" class="diagram">
  */
 class Single {
+  constructor(subscribeActual) {
+    this.subscribeActual = subscribeActual;
+  }
+
   /**
    * Provides an API (via a cold Single) that bridges
    * the reactive world with the callback-style world.
@@ -2615,7 +2583,7 @@ class Single {
    */
   subscribeWith(observer) {
     if (isObserver(observer)) {
-      this.subscribeActual(observer);
+      this.subscribeActual.call(this, observer);
     }
   }
 
@@ -2640,7 +2608,7 @@ class Single {
   subscribe(onSuccess, onError) {
     const controller = new AbortController();
     let once = false;
-    this.subscribeActual({
+    this.subscribeWith({
       onSubscribe(ac) {
         ac.signal.addEventListener('abort', () => {
           if (!once) {
