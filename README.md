@@ -71,6 +71,8 @@ npm run build
 ```
 
 ## Changelogs
+* 0.7.0
+  - Replaced operator bindings with operator reference + Function.call
 * 0.6.0
   - Fixed some operators not guarding observers.
 * 0.4.0
