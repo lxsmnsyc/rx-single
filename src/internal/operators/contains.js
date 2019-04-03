@@ -42,10 +42,9 @@ export default (source, value, comparer) => {
     cmp = containsComparer;
   }
 
-  const single = new Single();
+  const single = new Single(subscribeActual);
   single.source = source;
   single.value = value;
   single.comparer = cmp;
-  single.subscribeActual = subscribeActual.bind(single);
   return single;
 };
