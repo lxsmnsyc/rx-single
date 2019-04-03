@@ -84,6 +84,9 @@ import { isObserver } from './internal/utils';
  * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.legend.png" class="diagram">
  */
 export default class Single {
+  /**
+   * @ignore
+   */
   constructor(subscribeActual) {
     this.subscribeActual = subscribeActual;
   }
