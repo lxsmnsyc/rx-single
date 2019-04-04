@@ -1,6 +1,6 @@
 import AbortController from 'abort-controller';
 import {
-  onErrorHandler, onSuccessHandler, isPromise, cleanObserver,
+  onErrorHandler, onSuccessHandler, isPromise, cleanObserver, isFunction,
 } from '../utils';
 import Single from '../../single';
 import { error, fromPromise } from '../operators';
@@ -50,7 +50,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
   const single = new Single(subscribeActual);
