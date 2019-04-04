@@ -23,7 +23,7 @@ function subscribeActual(observer) {
  */
 export default (value) => {
   let report = value;
-  if (!(value instanceof Error)) {
+  if (!(value instanceof Error || typeof value === 'function')) {
     report = new Error('Single.error received a non-Error value.');
   }
 
