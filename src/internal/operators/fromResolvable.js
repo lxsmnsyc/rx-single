@@ -1,5 +1,7 @@
 import AbortController from 'abort-controller';
-import { onErrorHandler, onSuccessHandler, cleanObserver } from '../utils';
+import {
+  onErrorHandler, onSuccessHandler, cleanObserver, isFunction,
+} from '../utils';
 import Single from '../../single';
 import error from './error';
 
@@ -27,7 +29,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (subscriber) => {
-  if (typeof subscriber !== 'function') {
+  if (!isFunction(subscriber)) {
     return error(new Error('Single.fromResolvable: expects a function.'));
   }
   const single = new Single(subscribeActual);
