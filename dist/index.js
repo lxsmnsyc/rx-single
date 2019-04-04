@@ -6,11 +6,28 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.iterator] === 'function';
+  // eslint-disable-next-line valid-typeof
+  const isType = (x, y) => typeof x === y;
   /**
    * @ignore
    */
-  const isObserver = obj => typeof obj === 'object' && typeof obj.onSubscribe === 'function';
+  const isFunction = x => isType(x, 'function');
+  /**
+   * @ignore
+   */
+  const isNumber = x => isType(x, 'number');
+  /**
+   * @ignore
+   */
+  const isObject = x => isType(x, 'object');
+  /**
+   * @ignore
+   */
+  const isIterable = obj => isObject(obj) && isFunction(obj[Symbol.iterator]);
+  /**
+   * @ignore
+   */
+  const isObserver = obj => isObject(obj) && isFunction(obj.onSubscribe);
   /**
    * @ignore
    */
@@ -18,8 +35,11 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  const isPromise = obj => (obj instanceof Promise) || (!!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function');
-  /**
+  const isPromise = (obj) => {
+    if (obj == null) return false;
+    if (obj instanceof Promise) return true;
+    return (isObject(obj) || isFunction(obj)) && isFunction(obj.then);
+  };/**
    * @ignore
    */
   function onSuccessHandler(value) {
@@ -69,8 +89,8 @@ var Single = (function (AbortController) {
    */
   const cleanObserver = x => ({
     onSubscribe: x.onSubscribe,
-    onSuccess: typeof x.onSuccess === 'function' ? x.onSuccess : identity,
-    onError: typeof x.onError === 'function' ? x.onError : throwError,
+    onSuccess: isFunction(x.onSuccess) ? x.onSuccess : identity,
+    onError: isFunction(x.onError) ? x.onError : throwError,
   });
   /**
    * @ignore
@@ -122,11 +142,11 @@ var Single = (function (AbortController) {
    */
   var error = (value) => {
     let report = value;
-    if (!(value instanceof Error)) {
+    if (!(value instanceof Error || isFunction(value))) {
       report = new Error('Single.error received a non-Error value.');
     }
 
-    if (typeof value !== 'function') {
+    if (!isFunction(value)) {
       report = toCallable(report);
     }
     const single = new Single(subscribeActual);
@@ -371,7 +391,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var compose = (source, transformer) => {
-    if (typeof transformer !== 'function') {
+    if (!isFunction(transformer)) {
       return source;
     }
 
@@ -427,7 +447,7 @@ var Single = (function (AbortController) {
     }
 
     let cmp = comparer;
-    if (typeof cmp !== 'function') {
+    if (!isFunction(cmp)) {
       cmp = containsComparer;
     }
 
@@ -525,7 +545,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var delay = (source, amount, doDelayError) => {
-    if (typeof amount !== 'number') {
+    if (!isNumber(amount)) {
       return source;
     }
     const single = new Single(subscribeActual$7);
@@ -581,7 +601,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var delaySubscription = (source, amount) => {
-    if (typeof amount !== 'number') {
+    if (!isNumber(amount)) {
       return source;
     }
     const single = new Single(subscribeActual$8);
@@ -670,7 +690,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doAfterSuccess = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -705,7 +725,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doAfterTerminate = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -755,7 +775,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doFinally = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -787,7 +807,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doOnAbort = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -819,7 +839,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doOnError = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -854,7 +874,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doOnEvent = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -886,7 +906,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doOnSuccess = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -918,7 +938,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doOnSubscribe = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
     const single = new Single(subscribeActual$h);
@@ -952,7 +972,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var doOnTerminate = (source, callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return source;
     }
 
@@ -1021,7 +1041,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var flatMap = (source, mapper) => {
-    if (typeof mapper !== 'function') {
+    if (!isFunction(mapper)) {
       return source;
     }
 
@@ -1076,7 +1096,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var fromCallable = (callable) => {
-    if (typeof callable !== 'function') {
+    if (!isFunction(callable)) {
       return error(new Error('Single.fromCallable: callable received is not a function.'));
     }
     const single = new Single(subscribeActual$k);
@@ -1143,7 +1163,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var fromResolvable = (subscriber) => {
-    if (typeof subscriber !== 'function') {
+    if (!isFunction(subscriber)) {
       return error(new Error('Single.fromResolvable: expects a function.'));
     }
     const single = new Single(subscribeActual$m);
@@ -1193,7 +1213,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var lift = (source, operator) => {
-    if (typeof operator !== 'function') {
+    if (!isFunction(operator)) {
       return source;
     }
 
@@ -1239,7 +1259,7 @@ var Single = (function (AbortController) {
    */
   var map = (source, mapper) => {
     let ms = mapper;
-    if (typeof mapper !== 'function') {
+    if (!isFunction(mapper)) {
       ms = defaultMapper;
     }
 
@@ -1334,7 +1354,7 @@ var Single = (function (AbortController) {
       onError(x) {
         let result;
 
-        if (typeof resumeIfError === 'function') {
+        if (isFunction(resumeIfError)) {
           try {
             result = resumeIfError(x);
             if (!(result instanceof Single)) {
@@ -1368,7 +1388,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var onErrorResumeNext = (source, resumeIfError) => {
-    if (!(typeof resumeIfError === 'function' || resumeIfError instanceof Single)) {
+    if (!(isFunction(resumeIfError) || resumeIfError instanceof Single)) {
       return source;
     }
 
@@ -1407,7 +1427,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var onErrorReturn = (source, item) => {
-    if (typeof item !== 'function') {
+    if (!isFunction(item)) {
       return source;
     }
 
@@ -1515,7 +1535,7 @@ var Single = (function (AbortController) {
           controller.abort();
         },
         onError(x) {
-          if (typeof bipredicate === 'function') {
+          if (isFunction(bipredicate)) {
             const result = bipredicate(retries, x);
 
             if (result) {
@@ -1636,7 +1656,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var timer = (amount) => {
-    if (typeof amount !== 'number') {
+    if (!isNumber(amount)) {
       return error(new Error('Single.timer: "amount" is not a number.'));
     }
     const single = new Single(subscribeActual$x);
@@ -1692,7 +1712,7 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var timeout = (source, amount) => {
-    if (typeof amount !== 'number') {
+    if (!isNumber(amount)) {
       return source;
     }
     const single = new Single(subscribeActual$y);
@@ -1788,7 +1808,7 @@ var Single = (function (AbortController) {
       return error(new Error('Single.zip: sources is not Iterable.'));
     }
     let fn = zipper;
-    if (typeof zipper !== 'function') {
+    if (!isFunction(zipper)) {
       fn = defaultZipper;
     }
     const single = new Single(subscribeActual$z);
@@ -1902,7 +1922,7 @@ var Single = (function (AbortController) {
       return source;
     }
     let fn = zipper;
-    if (typeof zipper !== 'function') {
+    if (!isFunction(zipper)) {
       fn = defaultZipper$1;
     }
     const single = new Single(subscribeActual$A);
