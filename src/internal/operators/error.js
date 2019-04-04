@@ -1,4 +1,4 @@
-import { toCallable, immediateError } from '../utils';
+import { toCallable, immediateError, isFunction } from '../utils';
 import Single from '../../single';
 
 /**
@@ -23,11 +23,11 @@ function subscribeActual(observer) {
  */
 export default (value) => {
   let report = value;
-  if (!(value instanceof Error || typeof value === 'function')) {
+  if (!(value instanceof Error || isFunction(value))) {
     report = new Error('Single.error received a non-Error value.');
   }
 
-  if (typeof value !== 'function') {
+  if (!isFunction(value)) {
     report = toCallable(report);
   }
   const single = new Single(subscribeActual);
