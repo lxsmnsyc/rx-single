@@ -1,11 +1,12 @@
 import Single from '../../single';
 import error from './error';
+import { isFunction } from '../utils';
 
 /**
  * @ignore
  */
 export default (source, transformer) => {
-  if (typeof transformer !== 'function') {
+  if (!isFunction(transformer)) {
     return source;
   }
 
