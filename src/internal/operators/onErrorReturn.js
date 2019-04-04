@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { cleanObserver } from '../utils';
+import { cleanObserver, isFunction } from '../utils';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
@@ -30,7 +30,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, item) => {
-  if (typeof item !== 'function') {
+  if (!isFunction(item)) {
     return source;
   }
 
