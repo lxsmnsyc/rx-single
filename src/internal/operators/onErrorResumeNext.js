@@ -1,6 +1,6 @@
 import AbortController from 'abort-controller';
 import Single from '../../single';
-import { cleanObserver } from '../utils';
+import { cleanObserver, isFunction } from '../utils';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
@@ -28,7 +28,7 @@ function subscribeActual(observer) {
     onError(x) {
       let result;
 
-      if (typeof resumeIfError === 'function') {
+      if (isFunction(resumeIfError)) {
         try {
           result = resumeIfError(x);
           if (!(result instanceof Single)) {
@@ -62,7 +62,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, resumeIfError) => {
-  if (!(typeof resumeIfError === 'function' || resumeIfError instanceof Single)) {
+  if (!(isFunction(resumeIfError) || resumeIfError instanceof Single)) {
     return source;
   }
 
