@@ -1,6 +1,6 @@
 import AbortController from 'abort-controller';
 import Single from '../../single';
-import { cleanObserver } from '../utils';
+import { cleanObserver, isNumber } from '../utils';
 
 /**
  * @ignore
@@ -52,7 +52,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, amount, doDelayError) => {
-  if (typeof amount !== 'number') {
+  if (!isNumber(amount)) {
     return source;
   }
   const single = new Single(subscribeActual);
