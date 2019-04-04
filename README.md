@@ -72,7 +72,7 @@ npm run build
 
 ## Changelogs
 * 0.8.0
-  - Fixed fromCallable and fromPromise subscription overhead
+  - Fixed fromCallable subscription overhead
 * 0.7.0
   - Replaced operator bindings with operator reference + Function.call
 * 0.6.0
