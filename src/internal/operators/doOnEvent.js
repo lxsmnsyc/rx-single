@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { cleanObserver } from '../utils';
+import { cleanObserver, isFunction } from '../utils';
 
 /**
  * @ignore
@@ -26,7 +26,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
