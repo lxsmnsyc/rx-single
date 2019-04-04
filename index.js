@@ -7,11 +7,28 @@ var AbortController = _interopDefault(require('abort-controller'));
 /**
  * @ignore
  */
-const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.iterator] === 'function';
+// eslint-disable-next-line valid-typeof
+const isType = (x, y) => typeof x === y;
 /**
  * @ignore
  */
-const isObserver = obj => typeof obj === 'object' && typeof obj.onSubscribe === 'function';
+const isFunction = x => isType(x, 'function');
+/**
+ * @ignore
+ */
+const isNumber = x => isType(x, 'number');
+/**
+ * @ignore
+ */
+const isObject = x => isType(x, 'object');
+/**
+ * @ignore
+ */
+const isIterable = obj => isObject(obj) && isFunction(obj[Symbol.iterator]);
+/**
+ * @ignore
+ */
+const isObserver = obj => isObject(obj) && isFunction(obj.onSubscribe);
 /**
  * @ignore
  */
@@ -19,8 +36,11 @@ const toCallable = x => () => x;
 /**
  * @ignore
  */
-const isPromise = obj => (obj instanceof Promise) || (!!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function');
-/**
+const isPromise = (obj) => {
+  if (obj == null) return false;
+  if (obj instanceof Promise) return true;
+  return (isObject(obj) || isFunction(obj)) && isFunction(obj.then);
+};/**
  * @ignore
  */
 function onSuccessHandler(value) {
@@ -70,8 +90,8 @@ const throwError = (x) => { throw x; };
  */
 const cleanObserver = x => ({
   onSubscribe: x.onSubscribe,
-  onSuccess: typeof x.onSuccess === 'function' ? x.onSuccess : identity,
-  onError: typeof x.onError === 'function' ? x.onError : throwError,
+  onSuccess: isFunction(x.onSuccess) ? x.onSuccess : identity,
+  onError: isFunction(x.onError) ? x.onError : throwError,
 });
 /**
  * @ignore
@@ -123,11 +143,11 @@ function subscribeActual(observer) {
  */
 var error = (value) => {
   let report = value;
-  if (!(value instanceof Error)) {
+  if (!(value instanceof Error || isFunction(value))) {
     report = new Error('Single.error received a non-Error value.');
   }
 
-  if (typeof value !== 'function') {
+  if (!isFunction(value)) {
     report = toCallable(report);
   }
   const single = new Single(subscribeActual);
@@ -372,7 +392,7 @@ var create = (subscriber) => {
  * @ignore
  */
 var compose = (source, transformer) => {
-  if (typeof transformer !== 'function') {
+  if (!isFunction(transformer)) {
     return source;
   }
 
@@ -428,7 +448,7 @@ var contains = (source, value, comparer) => {
   }
 
   let cmp = comparer;
-  if (typeof cmp !== 'function') {
+  if (!isFunction(cmp)) {
     cmp = containsComparer;
   }
 
@@ -526,7 +546,7 @@ function subscribeActual$7(observer) {
  * @ignore
  */
 var delay = (source, amount, doDelayError) => {
-  if (typeof amount !== 'number') {
+  if (!isNumber(amount)) {
     return source;
   }
   const single = new Single(subscribeActual$7);
@@ -582,7 +602,7 @@ function subscribeActual$8(observer) {
  * @ignore
  */
 var delaySubscription = (source, amount) => {
-  if (typeof amount !== 'number') {
+  if (!isNumber(amount)) {
     return source;
   }
   const single = new Single(subscribeActual$8);
@@ -671,7 +691,7 @@ function subscribeActual$a(observer) {
  * @ignore
  */
 var doAfterSuccess = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -706,7 +726,7 @@ function subscribeActual$b(observer) {
  * @ignore
  */
 var doAfterTerminate = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -756,7 +776,7 @@ function subscribeActual$c(observer) {
  * @ignore
  */
 var doFinally = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -788,7 +808,7 @@ function subscribeActual$d(observer) {
  * @ignore
  */
 var doOnAbort = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -820,7 +840,7 @@ function subscribeActual$e(observer) {
  * @ignore
  */
 var doOnError = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -855,7 +875,7 @@ function subscribeActual$f(observer) {
  * @ignore
  */
 var doOnEvent = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -887,7 +907,7 @@ function subscribeActual$g(observer) {
  * @ignore
  */
 var doOnSuccess = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -919,7 +939,7 @@ function subscribeActual$h(observer) {
  * @ignore
  */
 var doOnSubscribe = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
   const single = new Single(subscribeActual$h);
@@ -953,7 +973,7 @@ function subscribeActual$i(observer) {
  * @ignore
  */
 var doOnTerminate = (source, callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return source;
   }
 
@@ -1022,7 +1042,7 @@ function subscribeActual$j(observer) {
  * @ignore
  */
 var flatMap = (source, mapper) => {
-  if (typeof mapper !== 'function') {
+  if (!isFunction(mapper)) {
     return source;
   }
 
@@ -1077,7 +1097,7 @@ function subscribeActual$k(observer) {
  * @ignore
  */
 var fromCallable = (callable) => {
-  if (typeof callable !== 'function') {
+  if (!isFunction(callable)) {
     return error(new Error('Single.fromCallable: callable received is not a function.'));
   }
   const single = new Single(subscribeActual$k);
@@ -1144,7 +1164,7 @@ function subscribeActual$m(observer) {
  * @ignore
  */
 var fromResolvable = (subscriber) => {
-  if (typeof subscriber !== 'function') {
+  if (!isFunction(subscriber)) {
     return error(new Error('Single.fromResolvable: expects a function.'));
   }
   const single = new Single(subscribeActual$m);
@@ -1194,7 +1214,7 @@ function subscribeActual$o(observer) {
  * @ignore
  */
 var lift = (source, operator) => {
-  if (typeof operator !== 'function') {
+  if (!isFunction(operator)) {
     return source;
   }
 
@@ -1240,7 +1260,7 @@ function subscribeActual$p(observer) {
  */
 var map = (source, mapper) => {
   let ms = mapper;
-  if (typeof mapper !== 'function') {
+  if (!isFunction(mapper)) {
     ms = defaultMapper;
   }
 
@@ -1335,7 +1355,7 @@ function subscribeActual$r(observer) {
     onError(x) {
       let result;
 
-      if (typeof resumeIfError === 'function') {
+      if (isFunction(resumeIfError)) {
         try {
           result = resumeIfError(x);
           if (!(result instanceof Single)) {
@@ -1369,7 +1389,7 @@ function subscribeActual$r(observer) {
  * @ignore
  */
 var onErrorResumeNext = (source, resumeIfError) => {
-  if (!(typeof resumeIfError === 'function' || resumeIfError instanceof Single)) {
+  if (!(isFunction(resumeIfError) || resumeIfError instanceof Single)) {
     return source;
   }
 
@@ -1408,7 +1428,7 @@ function subscribeActual$s(observer) {
  * @ignore
  */
 var onErrorReturn = (source, item) => {
-  if (typeof item !== 'function') {
+  if (!isFunction(item)) {
     return source;
   }
 
@@ -1516,7 +1536,7 @@ function subscribeActual$v(observer) {
         controller.abort();
       },
       onError(x) {
-        if (typeof bipredicate === 'function') {
+        if (isFunction(bipredicate)) {
           const result = bipredicate(retries, x);
 
           if (result) {
@@ -1637,7 +1657,7 @@ function subscribeActual$x(observer) {
  * @ignore
  */
 var timer = (amount) => {
-  if (typeof amount !== 'number') {
+  if (!isNumber(amount)) {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
   const single = new Single(subscribeActual$x);
@@ -1693,7 +1713,7 @@ function subscribeActual$y(observer) {
  * @ignore
  */
 var timeout = (source, amount) => {
-  if (typeof amount !== 'number') {
+  if (!isNumber(amount)) {
     return source;
   }
   const single = new Single(subscribeActual$y);
@@ -1789,7 +1809,7 @@ var zip = (sources, zipper) => {
     return error(new Error('Single.zip: sources is not Iterable.'));
   }
   let fn = zipper;
-  if (typeof zipper !== 'function') {
+  if (!isFunction(zipper)) {
     fn = defaultZipper;
   }
   const single = new Single(subscribeActual$z);
@@ -1903,7 +1923,7 @@ var zipWith = (source, other, zipper) => {
     return source;
   }
   let fn = zipper;
-  if (typeof zipper !== 'function') {
+  if (!isFunction(zipper)) {
     fn = defaultZipper$1;
   }
   const single = new Single(subscribeActual$A);
