@@ -1062,7 +1062,13 @@ function subscribeActual$k(observer) {
   }
 
   if (isPromise(result)) {
-    fromPromise(result).subscribe(onSuccess, onError);
+    fromPromise(result).subscribeWith({
+      onSubscribe(ac) {
+        controller.signal.addEventListener('abort', () => ac.abort());
+      },
+      onSuccess: resolve,
+      onError: reject,
+    });
   } else {
     resolve(result);
   }
