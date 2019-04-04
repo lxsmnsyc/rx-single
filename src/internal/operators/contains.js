@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { cleanObserver } from '../utils';
+import { cleanObserver, isFunction } from '../utils';
 
 /**
  * @ignore
@@ -38,7 +38,7 @@ export default (source, value, comparer) => {
   }
 
   let cmp = comparer;
-  if (typeof cmp !== 'function') {
+  if (!isFunction(cmp)) {
     cmp = containsComparer;
   }
 
