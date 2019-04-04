@@ -1,6 +1,6 @@
 import AbortController from 'abort-controller';
 import Single from '../../single';
-import { cleanObserver } from '../utils';
+import { cleanObserver, isFunction } from '../utils';
 
 /**
  * @ignore
@@ -107,7 +107,7 @@ export default (source, other, zipper) => {
     return source;
   }
   let fn = zipper;
-  if (typeof zipper !== 'function') {
+  if (!isFunction(zipper)) {
     fn = defaultZipper;
   }
   const single = new Single(subscribeActual);
