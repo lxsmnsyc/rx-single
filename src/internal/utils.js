@@ -2,11 +2,28 @@ import AbortController from 'abort-controller';
 /**
  * @ignore
  */
-export const isIterable = obj => typeof obj === 'object' && typeof obj[Symbol.iterator] === 'function';
+// eslint-disable-next-line valid-typeof
+const isType = (x, y) => typeof x === y;
 /**
  * @ignore
  */
-export const isObserver = obj => typeof obj === 'object' && typeof obj.onSubscribe === 'function';
+export const isFunction = x => isType(x, 'function');
+/**
+ * @ignore
+ */
+export const isNumber = x => isType(x, 'number');
+/**
+ * @ignore
+ */
+export const isObject = x => isType(x, 'object');
+/**
+ * @ignore
+ */
+export const isIterable = obj => isObject(obj) && isFunction(obj[Symbol.iterator]);
+/**
+ * @ignore
+ */
+export const isObserver = obj => isObject(obj) && isFunction(obj.onSubscribe);
 /**
  * @ignore
  */
@@ -14,8 +31,11 @@ export const toCallable = x => () => x;
 /**
  * @ignore
  */
-export const isPromise = obj => (obj instanceof Promise) || (!!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function');
-/**
+export const isPromise = (obj) => {
+  if (obj == null) return false;
+  if (obj instanceof Promise) return true;
+  return (isObject(obj) || isFunction(obj)) && isFunction(obj.then);
+};/**
  * @ignore
  */
 export function onSuccessHandler(value) {
@@ -65,8 +85,8 @@ const throwError = (x) => { throw x; };
  */
 export const cleanObserver = x => ({
   onSubscribe: x.onSubscribe,
-  onSuccess: typeof x.onSuccess === 'function' ? x.onSuccess : identity,
-  onError: typeof x.onError === 'function' ? x.onError : throwError,
+  onSuccess: isFunction(x.onSuccess) ? x.onSuccess : identity,
+  onError: isFunction(x.onError) ? x.onError : throwError,
 });
 /**
  * @ignore
