@@ -45,7 +45,7 @@ export function onSuccessHandler(value) {
   }
   try {
     if (typeof value === 'undefined') {
-      onError('onSuccess called with a null value.');
+      onError(new Error('onSuccess called with a null value.'));
     } else {
       onSuccess(value);
     }
