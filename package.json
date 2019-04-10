@@ -60,6 +60,7 @@
     "terser": "^3.17.0"
   },
   "dependencies": {
-    "abort-controller": "^2.0.3"
+    "abort-controller": "^2.0.3",
+    "rx-scheduler": "^0.1.1"
   }
 }
