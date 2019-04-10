@@ -2614,7 +2614,7 @@ class Single {
    * Modifies a Single to emit its item (or notify of its error)
    * on a specified Scheduler, asynchronously.
    *
-   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.subscribeOn.png" class="diagram">
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.observeOn.png" class="diagram">
    *
    * @param {?Scheduler} scheduler
    * the target scheduler to use for the non-blocking wait and emission.
@@ -2771,7 +2771,7 @@ class Single {
    * @param {?function(x: any)} onSuccess
    * the function you have designed to accept the emission
    * from the Single
-   * @param {?function(x: any)} onError
+   * @param {?function(x: Error)} onError
    * the function you have designed to accept any error
    * notification from the Single
    * @returns {AbortController}
