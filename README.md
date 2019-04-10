@@ -2,8 +2,6 @@
 
 Reactive Extensions - represents a deferred computation with an indication for a single value or exception.
 
-JS Implementation of the Reactive Extensions (RxJava) [Single](http://reactivex.io/documentation/single.html)
-
 [![NPM](https://nodei.co/npm/rx-single.png)](https://nodei.co/npm/rx-single/)
 
 [![](https://data.jsdelivr.com/v1/package/npm/rx-single/badge)](https://www.jsdelivr.com/package/npm/rx-single)
@@ -78,7 +76,7 @@ npm run build
 * 0.9.0
   - now uses [Schedulers](https://github.com/LXSMNSYC/rx-scheduler)
   - `delay`, `delaySubscription`, `timeout` and `timer` now accepts `Schedulers` (defaults to `Scheduler.current`).
-  - added two new operators: `observeOn` (observes the emissions on a given Scheduler) and `subscribeOn` (subscribes to a given Observable on a given Scheduler).
+  - added two new operators: `observeOn` (observes the emissions on a given Scheduler) and `subscribeOn` (subscribes to a given Single on a given Scheduler).
 * 0.8.0
   - Fixed fromCallable subscription overhead
 * 0.7.0
