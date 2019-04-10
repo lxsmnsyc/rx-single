@@ -1,7 +1,8 @@
-var Single = (function (AbortController) {
+var Single = (function (AbortController, Scheduler) {
   'use strict';
 
   AbortController = AbortController && AbortController.hasOwnProperty('default') ? AbortController['default'] : AbortController;
+  Scheduler = Scheduler && Scheduler.hasOwnProperty('default') ? Scheduler['default'] : Scheduler;
 
   /**
    * @ignore
@@ -501,9 +502,7 @@ var Single = (function (AbortController) {
   function subscribeActual$7(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-    const { amount, doDelayError } = this;
-
-    let timeout;
+    const { amount, scheduler, doDelayError } = this;
 
     const controller = new AbortController();
 
@@ -515,12 +514,6 @@ var Single = (function (AbortController) {
       return;
     }
 
-    signal.addEventListener('abort', () => {
-      if (typeof timeout !== 'undefined') {
-        clearTimeout(timeout);
-      }
-    });
-
     this.source.subscribeWith({
       onSubscribe(ac) {
         signal.addEventListener('abort', () => {
@@ -528,29 +521,42 @@ var Single = (function (AbortController) {
         });
       },
       onSuccess(x) {
-        timeout = setTimeout(() => {
+        const ac = scheduler.delay(() => {
           onSuccess(x);
           controller.abort();
         }, amount);
+
+        signal.addEventListener('abort', () => {
+          ac.abort();
+        });
       },
       onError(x) {
-        timeout = setTimeout(() => {
+        const ac = scheduler.delay(() => {
           onError(x);
           controller.abort();
         }, doDelayError ? amount : 0);
+
+        signal.addEventListener('abort', () => {
+          ac.abort();
+        });
       },
     });
   }
   /**
    * @ignore
    */
-  var delay = (source, amount, doDelayError) => {
+  var delay = (source, amount, scheduler, doDelayError) => {
     if (!isNumber(amount)) {
       return source;
+    }
+    let sched = scheduler;
+    if (!(sched instanceof Scheduler.interface)) {
+      sched = Scheduler.current;
     }
     const single = new Single(subscribeActual$7);
     single.source = source;
     single.amount = amount;
+    single.scheduler = sched;
     single.doDelayError = doDelayError;
     return single;
   };
@@ -561,19 +567,10 @@ var Single = (function (AbortController) {
   function subscribeActual$8(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-    const { amount } = this;
-
-    let timeout;
-
+    const { amount, scheduler } = this;
     const controller = new AbortController();
 
     const { signal } = controller;
-
-    signal.addEventListener('abort', () => {
-      if (typeof timeout !== 'undefined') {
-        clearTimeout(timeout);
-      }
-    });
 
     onSubscribe(controller);
 
@@ -581,7 +578,7 @@ var Single = (function (AbortController) {
       return;
     }
 
-    timeout = setTimeout(() => {
+    const abortable = scheduler.delay(() => {
       this.source.subscribeWith({
         onSubscribe(ac) {
           signal.addEventListener('abort', () => ac.abort());
@@ -596,17 +593,24 @@ var Single = (function (AbortController) {
         },
       });
     }, amount);
+
+    signal.addEventListener('abort', () => abortable.abort());
   }
   /**
    * @ignore
    */
-  var delaySubscription = (source, amount) => {
+  var delaySubscription = (source, amount, scheduler) => {
     if (!isNumber(amount)) {
       return source;
+    }
+    let sched = scheduler;
+    if (!(sched instanceof Scheduler.interface)) {
+      sched = Scheduler.current;
     }
     const single = new Single(subscribeActual$8);
     single.source = source;
     single.amount = amount;
+    single.scheduler = sched;
     return single;
   };
 
@@ -1329,6 +1333,52 @@ var Single = (function (AbortController) {
   };
 
   function subscribeActual$r(observer) {
+    const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
+
+    const { source, scheduler } = this;
+
+    const controller = new AbortController();
+    onSubscribe(controller);
+
+    const { signal } = controller;
+
+    if (signal.aborted) {
+      return;
+    }
+
+    source.subscribeWith({
+      onSubscribe(ac) {
+        signal.addEventListener('abort', () => ac.abort());
+      },
+      onSuccess(x) {
+        scheduler.schedule(() => {
+          onSuccess(x);
+          controller.abort();
+        });
+      },
+      onError(x) {
+        scheduler.schedule(() => {
+          onError(x);
+          controller.abort();
+        });
+      },
+    });
+  }
+  /**
+   * @ignore
+   */
+  var observeOn = (source, scheduler) => {
+    let sched = scheduler;
+    if (!(sched instanceof Scheduler.interface)) {
+      sched = Scheduler.current;
+    }
+    const single = new Single(subscribeActual$r);
+    single.source = source;
+    single.scheduler = sched;
+    return single;
+  };
+
+  function subscribeActual$s(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, resumeIfError } = this;
@@ -1392,13 +1442,13 @@ var Single = (function (AbortController) {
       return source;
     }
 
-    const single = new Single(subscribeActual$r);
+    const single = new Single(subscribeActual$s);
     single.source = source;
     single.resumeIfError = resumeIfError;
     return single;
   };
 
-  function subscribeActual$s(observer) {
+  function subscribeActual$t(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, item } = this;
@@ -1431,13 +1481,13 @@ var Single = (function (AbortController) {
       return source;
     }
 
-    const single = new Single(subscribeActual$s);
+    const single = new Single(subscribeActual$t);
     single.source = source;
     single.item = item;
     return single;
   };
 
-  function subscribeActual$t(observer) {
+  function subscribeActual$u(observer) {
     const { onSuccess, onSubscribe } = cleanObserver(observer);
 
     const { source, item } = this;
@@ -1458,7 +1508,7 @@ var Single = (function (AbortController) {
       return source;
     }
 
-    const single = new Single(subscribeActual$t);
+    const single = new Single(subscribeActual$u);
     single.source = source;
     single.item = item;
     return single;
@@ -1482,7 +1532,7 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  function subscribeActual$u(observer) {
+  function subscribeActual$v(observer) {
     observer.onSubscribe(CONTROLLER);
   }
   /**
@@ -1494,8 +1544,8 @@ var Single = (function (AbortController) {
    */
   var never = () => {
     if (typeof INSTANCE === 'undefined') {
-      INSTANCE = new Single(subscribeActual$u);
-      INSTANCE.subscribeActual = subscribeActual$u.bind(INSTANCE);
+      INSTANCE = new Single(subscribeActual$v);
+      INSTANCE.subscribeActual = subscribeActual$v.bind(INSTANCE);
     }
     return INSTANCE;
   };
@@ -1503,7 +1553,7 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  function subscribeActual$v(observer) {
+  function subscribeActual$w(observer) {
     const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
     const controller = new AbortController();
@@ -1558,16 +1608,63 @@ var Single = (function (AbortController) {
    * @ignore
    */
   var retry = (source, bipredicate) => {
-    const single = new Single(subscribeActual$v);
+    const single = new Single(subscribeActual$w);
     single.source = source;
     single.bipredicate = bipredicate;
+    return single;
+  };
+
+  function subscribeActual$x(observer) {
+    const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
+
+    const { source, scheduler } = this;
+
+    const controller = new AbortController();
+    onSubscribe(controller);
+
+    const { signal } = controller;
+
+    if (signal.aborted) {
+      return;
+    }
+
+    scheduler.schedule(() => {
+      if (signal.aborted) {
+        return;
+      }
+      source.subscribeWith({
+        onSubscribe(ac) {
+          signal.addEventListener('abort', () => ac.abort());
+        },
+        onSuccess(x) {
+          onSuccess(x);
+          controller.abort();
+        },
+        onError(x) {
+          onError(x);
+          controller.abort();
+        },
+      });
+    });
+  }
+  /**
+   * @ignore
+   */
+  var subscribeOn = (source, scheduler) => {
+    let sched = scheduler;
+    if (!(sched instanceof Scheduler.interface)) {
+      sched = Scheduler.current;
+    }
+    const single = new Single(subscribeActual$x);
+    single.source = source;
+    single.scheduler = sched;
     return single;
   };
 
   /**
    * @ignore
    */
-  function subscribeActual$w(observer) {
+  function subscribeActual$y(observer) {
     const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
     const controller = new AbortController();
@@ -1623,7 +1720,7 @@ var Single = (function (AbortController) {
       return source;
     }
 
-    const single = new Single(subscribeActual$w);
+    const single = new Single(subscribeActual$y);
     single.source = source;
     single.other = other;
     return single;
@@ -1632,9 +1729,8 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  function subscribeActual$x(observer) {
+  function subscribeActual$z(observer) {
     const { onSuccess, onSubscribe } = cleanObserver(observer);
-
 
     const controller = new AbortController();
 
@@ -1646,31 +1742,35 @@ var Single = (function (AbortController) {
       return;
     }
 
-    const timeout = setTimeout(onSuccess, this.amount, 0);
+    const timeout = this.scheduler.delay(() => onSuccess(0), this.amount);
 
-    signal.addEventListener('abort', () => {
-      clearTimeout(timeout);
-    });
+    signal.addEventListener('abort', () => timeout.abort());
   }
   /**
    * @ignore
    */
-  var timer = (amount) => {
+  var timer = (amount, scheduler) => {
     if (!isNumber(amount)) {
       return error(new Error('Single.timer: "amount" is not a number.'));
     }
-    const single = new Single(subscribeActual$x);
+
+    let sched = scheduler;
+    if (!(sched instanceof Scheduler.interface)) {
+      sched = Scheduler.current;
+    }
+    const single = new Single(subscribeActual$z);
     single.amount = amount;
+    single.scheduler = sched;
     return single;
   };
 
   /**
    * @ignore
    */
-  function subscribeActual$y(observer) {
+  function subscribeActual$A(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-    const { amount } = this;
+    const { amount, scheduler } = this;
 
     const controller = new AbortController();
 
@@ -1682,7 +1782,7 @@ var Single = (function (AbortController) {
       return;
     }
 
-    const timeout = setTimeout(
+    const timeout = scheduler.delay(
       () => {
         onError(new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'));
         controller.abort();
@@ -1690,9 +1790,7 @@ var Single = (function (AbortController) {
       amount,
     );
 
-    signal.addEventListener('abort', () => {
-      clearTimeout(timeout);
-    });
+    signal.addEventListener('abort', () => timeout.abort());
 
     this.source.subscribeWith({
       onSubscribe(ac) {
@@ -1711,13 +1809,18 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  var timeout = (source, amount) => {
+  var timeout = (source, amount, scheduler) => {
     if (!isNumber(amount)) {
       return source;
     }
-    const single = new Single(subscribeActual$y);
+    let sched = scheduler;
+    if (!(sched instanceof Scheduler.interface)) {
+      sched = Scheduler.current;
+    }
+    const single = new Single(subscribeActual$A);
     single.source = source;
     single.amount = amount;
+    single.scheduler = sched;
     return single;
   };
 
@@ -1725,7 +1828,7 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  function subscribeActual$z(observer) {
+  function subscribeActual$B(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const result = [];
@@ -1811,7 +1914,7 @@ var Single = (function (AbortController) {
     if (!isFunction(zipper)) {
       fn = defaultZipper;
     }
-    const single = new Single(subscribeActual$z);
+    const single = new Single(subscribeActual$B);
     single.sources = sources;
     single.zipper = fn;
     return single;
@@ -1824,7 +1927,7 @@ var Single = (function (AbortController) {
   /**
    * @ignore
    */
-  function subscribeActual$A(observer) {
+  function subscribeActual$C(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     let SA;
@@ -1925,7 +2028,7 @@ var Single = (function (AbortController) {
     if (!isFunction(zipper)) {
       fn = defaultZipper$1;
     }
-    const single = new Single(subscribeActual$A);
+    const single = new Single(subscribeActual$C);
     single.source = source;
     single.other = other;
     single.zipper = fn;
@@ -2130,13 +2233,16 @@ var Single = (function (AbortController) {
      * @param {!Number} amount
      * the amount of time the success signal should be
      * delayed for (in milliseconds).
+     * @param {?Scheduler} scheduler
+     * the target scheduler to use for the non-blocking wait and emission.
+     * By default, schedules on the current thread.
      * @param {?Boolean} doDelayError
      * if true, both success and error signals are delayed.
      * if false, only success signals are delayed.
      * @returns {Single}
      */
-    delay(amount, doDelayError) {
-      return delay(this, amount, doDelayError);
+    delay(amount, scheduler, doDelayError) {
+      return delay(this, amount, scheduler, doDelayError);
     }
 
     /**
@@ -2146,10 +2252,13 @@ var Single = (function (AbortController) {
      * @param {!Number} amount
      * the time amount to wait with the subscription
      * (in milliseconds).
+     * @param {?Scheduler} scheduler
+     * the target scheduler to use for the non-blocking wait and emission.
+     * By default, schedules on the current thread.
      * @returns {Single}
      */
-    delaySubscription(amount) {
-      return delaySubscription(this, amount);
+    delaySubscription(amount, scheduler) {
+      return delaySubscription(this, amount, scheduler);
     }
 
     /**
@@ -2501,6 +2610,23 @@ var Single = (function (AbortController) {
     }
 
     /**
+     * Modifies a Single to emit its item (or notify of its error)
+     * on a specified Scheduler, asynchronously.
+     *
+     * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.subscribeOn.png" class="diagram">
+     *
+     * @param {?Scheduler} scheduler
+     * the target scheduler to use for the non-blocking wait and emission.
+     * By default, schedules on the current thread.
+     * @return {Single}
+     * the source Single modified so that its subscribers are
+     * notified on the specified Scheduler
+     */
+    observeOn(scheduler) {
+      return observeOn(this, scheduler);
+    }
+
+    /**
      * Instructs a Single to pass control to another
      * Single rather than invoking Observer.onError
      * if it encounters an error.
@@ -2591,6 +2717,23 @@ var Single = (function (AbortController) {
      */
     retry(predicate) {
       return retry(this, predicate);
+    }
+
+    /**
+     * Asynchronously subscribes subscribers to this Single
+     * on the specified Scheduler.
+     *
+     * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.subscribeOn.png" class="diagram">
+     *
+     * @param {?Scheduler} scheduler
+     * the target scheduler to use for the non-blocking wait and emission.
+     * By default, schedules on the current thread.
+     * @returns {Single}
+     * the source Single modified so that its subscriptions happen
+     * on the specified Scheduler
+     */
+    subscribeOn(scheduler) {
+      return subscribeOn(this, scheduler);
     }
 
     /**
@@ -2689,10 +2832,13 @@ var Single = (function (AbortController) {
      *
      * @param {!Number} amount
      * the amount of time in milliseconds.
+     * @param {?Scheduler} scheduler
+     * the target scheduler to use for the non-blocking wait and emission.
+     * By default, schedules on the current thread.
      * @returns {Single}
      */
-    static timer(amount) {
-      return timer(amount);
+    static timer(amount, scheduler) {
+      return timer(amount, scheduler);
     }
 
     /**
@@ -2701,10 +2847,13 @@ var Single = (function (AbortController) {
      * timeout window.
      * @param {!Number} amount
      * amount of time in milliseconds.
+     * @param {?Scheduler} scheduler
+     * the target scheduler to use for the non-blocking wait and emission.
+     * By default, schedules on the current thread.
      * @returns {Single}
      */
-    timeout(amount) {
-      return timeout(this, amount);
+    timeout(amount, scheduler) {
+      return timeout(this, amount, scheduler);
     }
 
     /**
@@ -2807,4 +2956,4 @@ var Single = (function (AbortController) {
 
   return Single;
 
-}(AbortController));
+}(AbortController, Scheduler));
