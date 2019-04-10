@@ -25,7 +25,9 @@
  * @author Alexis Munsayac <alexis.munsayac@gmail.com>
  * @copyright Alexis Munsayac 2019
  */
-
+/**
+ * @external {Scheduler} https://lxsmnsyc.github.io/rx-scheduler/
+ */
 /**
  * @external {Iterable} https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols
  */
@@ -47,7 +49,7 @@ import {
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
   doOnTerminate, cache, delaySubscription, delayUntil,
-  merge, flatMap, retry, compose, lift, takeUntil,
+  merge, flatMap, retry, compose, lift, takeUntil, observeOn, subscribeOn,
 } from './internal/operators';
 import { isObserver } from './internal/utils';
 
@@ -219,13 +221,16 @@ export default class Single {
    * @param {!Number} amount
    * the amount of time the success signal should be
    * delayed for (in milliseconds).
+   * @param {?Scheduler} scheduler
+   * the target scheduler to use for the non-blocking wait and emission.
+   * By default, schedules on the current thread.
    * @param {?Boolean} doDelayError
    * if true, both success and error signals are delayed.
    * if false, only success signals are delayed.
    * @returns {Single}
    */
-  delay(amount, doDelayError) {
-    return delay(this, amount, doDelayError);
+  delay(amount, scheduler, doDelayError) {
+    return delay(this, amount, scheduler, doDelayError);
   }
 
   /**
@@ -235,10 +240,13 @@ export default class Single {
    * @param {!Number} amount
    * the time amount to wait with the subscription
    * (in milliseconds).
+   * @param {?Scheduler} scheduler
+   * the target scheduler to use for the non-blocking wait and emission.
+   * By default, schedules on the current thread.
    * @returns {Single}
    */
-  delaySubscription(amount) {
-    return delaySubscription(this, amount);
+  delaySubscription(amount, scheduler) {
+    return delaySubscription(this, amount, scheduler);
   }
 
   /**
@@ -590,6 +598,23 @@ export default class Single {
   }
 
   /**
+   * Modifies a Single to emit its item (or notify of its error)
+   * on a specified Scheduler, asynchronously.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.subscribeOn.png" class="diagram">
+   *
+   * @param {?Scheduler} scheduler
+   * the target scheduler to use for the non-blocking wait and emission.
+   * By default, schedules on the current thread.
+   * @return {Single}
+   * the source Single modified so that its subscribers are
+   * notified on the specified Scheduler
+   */
+  observeOn(scheduler) {
+    return observeOn(this, scheduler);
+  }
+
+  /**
    * Instructs a Single to pass control to another
    * Single rather than invoking Observer.onError
    * if it encounters an error.
@@ -680,6 +705,23 @@ export default class Single {
    */
   retry(predicate) {
     return retry(this, predicate);
+  }
+
+  /**
+   * Asynchronously subscribes subscribers to this Single
+   * on the specified Scheduler.
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.subscribeOn.png" class="diagram">
+   *
+   * @param {?Scheduler} scheduler
+   * the target scheduler to use for the non-blocking wait and emission.
+   * By default, schedules on the current thread.
+   * @returns {Single}
+   * the source Single modified so that its subscriptions happen
+   * on the specified Scheduler
+   */
+  subscribeOn(scheduler) {
+    return subscribeOn(this, scheduler);
   }
 
   /**
@@ -778,10 +820,13 @@ export default class Single {
    *
    * @param {!Number} amount
    * the amount of time in milliseconds.
+   * @param {?Scheduler} scheduler
+   * the target scheduler to use for the non-blocking wait and emission.
+   * By default, schedules on the current thread.
    * @returns {Single}
    */
-  static timer(amount) {
-    return timer(amount);
+  static timer(amount, scheduler) {
+    return timer(amount, scheduler);
   }
 
   /**
@@ -790,10 +835,13 @@ export default class Single {
    * timeout window.
    * @param {!Number} amount
    * amount of time in milliseconds.
+   * @param {?Scheduler} scheduler
+   * the target scheduler to use for the non-blocking wait and emission.
+   * By default, schedules on the current thread.
    * @returns {Single}
    */
-  timeout(amount) {
-    return timeout(this, amount);
+  timeout(amount, scheduler) {
+    return timeout(this, amount, scheduler);
   }
 
   /**
