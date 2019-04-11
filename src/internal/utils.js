@@ -35,7 +35,8 @@ export const isPromise = (obj) => {
   if (obj == null) return false;
   if (obj instanceof Promise) return true;
   return (isObject(obj) || isFunction(obj)) && isFunction(obj.then);
-};/**
+};
+/**
  * @ignore
  */
 export function onSuccessHandler(value) {
