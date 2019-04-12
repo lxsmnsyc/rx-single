@@ -215,6 +215,7 @@ var Single = (function (rxCancellable, Scheduler) {
             for (const obs of observers) {
               obs.onSuccess(x);
             }
+            controller.cancel();
             this.observers = undefined;
           },
           onError: (x) => {
@@ -225,6 +226,7 @@ var Single = (function (rxCancellable, Scheduler) {
             for (const obs of observers) {
               obs.onError(x);
             }
+            controller.cancel();
             this.observers = undefined;
           },
         });
