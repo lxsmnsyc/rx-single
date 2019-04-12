@@ -1,29 +1,21 @@
-import AbortController from 'abort-controller';
 import {
-  onErrorHandler, onSuccessHandler, cleanObserver, isFunction,
+  cleanObserver, isFunction,
 } from '../utils';
 import Single from '../../single';
 import error from './error';
+import SingleEmitter from '../../single-emitter';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const controller = new AbortController();
+  const emitter = new SingleEmitter(onSuccess, onError);
 
-  onSubscribe(controller);
+  onSubscribe(emitter);
 
-  if (controller.signal.aborted) {
-    return;
-  }
-
-  this.controller = controller;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
-
-  const resolve = onSuccessHandler.bind(this);
-  const reject = onErrorHandler.bind(this);
-
-  this.subscriber(resolve, reject);
+  this.subscriber(
+    x => emitter.onSuccess(x),
+    x => emitter.onError(x),
+  );
 }
 /**
  * @ignore
