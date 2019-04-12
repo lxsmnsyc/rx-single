@@ -15,7 +15,7 @@ export { default as delayUntil } from './operators/delayUntil';
 export { default as doAfterSuccess } from './operators/doAfterSuccess';
 export { default as doAfterTerminate } from './operators/doAfterTerminate';
 export { default as doFinally } from './operators/doFinally';
-export { default as doOnAbort } from './operators/doOnAbort';
+export { default as doOnCancel } from './operators/doOnCancel';
 export { default as doOnError } from './operators/doOnError';
 export { default as doOnEvent } from './operators/doOnEvent';
 export { default as doOnSuccess } from './operators/doOnSuccess';
