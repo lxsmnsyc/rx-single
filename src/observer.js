@@ -1,5 +1,4 @@
 /**
- * @interface
  * Provides a mechanism for receiving push-based notification
  * of a single value or an error.
  *
@@ -23,6 +22,7 @@
  *
  * Calling onSubscribe(Cancellable), onSuccess(Object) or onError(Error)
  * with a null argument is forbidden.
+ * @interface
  */
 // eslint-disable-next-line no-unused-vars
 export default class SingleObserver {
