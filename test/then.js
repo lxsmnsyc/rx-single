@@ -5,17 +5,12 @@ import Single from '../src/single';
 /**
  *
  */
-describe('Single', () => {
+describe('#then', () => {
   /**
    *
    */
-  describe('#then', () => {
-    /**
-     *
-     */
-    it('should create a Promise', () => {
-      const single = Single.just('Hello').then(x => x, x => x);
-      assert(single instanceof Promise);
-    });
+  it('should create a Promise', () => {
+    const single = Single.just('Hello').then(x => x, x => x);
+    assert(single instanceof Promise);
   });
 });
