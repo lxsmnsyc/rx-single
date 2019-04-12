@@ -12,7 +12,7 @@ function subscribeActual(observer) {
   let called = false;
   source.subscribeWith({
     onSubscribe(ac) {
-      ac.signal.addEventListener('abort', () => {
+      ac.addEventListener('cancel', () => {
         if (!called) {
           callable();
           called = true;
