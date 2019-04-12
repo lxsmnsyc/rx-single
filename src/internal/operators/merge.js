@@ -1,4 +1,5 @@
-import AbortController from 'abort-controller';
+
+import { LinkedCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import error from './error';
 import { cleanObserver } from '../utils';
@@ -9,43 +10,29 @@ import { cleanObserver } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new LinkedCancellable();
 
   onSubscribe(controller);
 
-  if (signal.aborted) {
-    return;
-  }
-
   this.source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
     onSuccess(x) {
+      controller.unlink();
       let result = x;
       if (!(x instanceof Single)) {
         result = error(new Error('Single.merge: source emitted a non-Single value.'));
       }
       result.subscribeWith({
         onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+          controller.link(ac);
         },
-        onSuccess(v) {
-          onSuccess(v);
-          controller.abort();
-        },
-        onError(v) {
-          onError(v);
-          controller.abort();
-        },
+        onSuccess,
+        onError,
       });
     },
-    onError(v) {
-      onError(v);
-      controller.abort();
-    },
+    onError,
   });
 }
 
