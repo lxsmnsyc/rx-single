@@ -1,4 +1,5 @@
-import AbortController from 'abort-controller';
+
+import { CompositeCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { isIterable, cleanObserver, isFunction } from '../utils';
 import error from './error';
@@ -12,15 +13,9 @@ function subscribeActual(observer) {
 
   const result = [];
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new CompositeCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { sources, zipper } = this;
 
@@ -28,13 +23,13 @@ function subscribeActual(observer) {
 
   if (size === 0) {
     onError(new Error('Single.zip: empty iterable'));
-    controller.abort();
+    controller.cancel();
     return;
   }
   let pending = size;
 
   for (let i = 0; i < size; i += 1) {
-    if (signal.aborted) {
+    if (controller.cancelled) {
       return;
     }
     const single = sources[i];
@@ -42,13 +37,10 @@ function subscribeActual(observer) {
     if (single instanceof Single) {
       single.subscribeWith({
         onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+          controller.add(ac);
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
-          if (signal.aborted) {
-            return;
-          }
           result[i] = x;
           pending -= 1;
           if (pending === 0) {
@@ -60,16 +52,16 @@ function subscribeActual(observer) {
               }
             } catch (e) {
               onError(e);
-              controller.abort();
+              controller.cancel();
               return;
             }
             onSuccess(r);
-            controller.abort();
+            controller.cancel();
           }
         },
         onError(x) {
           onError(x);
-          controller.abort();
+          controller.cancel();
         },
       });
     } else if (single != null) {
@@ -77,7 +69,7 @@ function subscribeActual(observer) {
       pending -= 1;
     } else {
       onError(new Error('Single.zip: One of the sources is undefined.'));
-      controller.abort();
+      controller.cancel();
       break;
     }
   }
