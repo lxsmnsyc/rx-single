@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-syntax */
-import AbortController from 'abort-controller';
+import { CompositeCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { isIterable, cleanObserver } from '../utils';
 import error from './error';
@@ -10,41 +10,35 @@ import error from './error';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new CompositeCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { sources } = this;
 
   for (const single of sources) {
-    if (signal.aborted) {
+    if (controller.cancelled) {
       return;
     }
 
     if (single instanceof Single) {
       single.subscribeWith({
-        onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+        onSubscribe(c) {
+          controller.add(c);
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
           onSuccess(x);
-          controller.abort();
+          controller.cancel();
         },
         onError(x) {
           onError(x);
-          controller.abort();
+          controller.cancel();
         },
       });
     } else {
       onError(new Error('Single.amb: One of the sources is a non-Single.'));
-      controller.abort();
+      controller.cancel();
       break;
     }
   }
