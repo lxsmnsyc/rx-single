@@ -1,4 +1,5 @@
-import AbortController from 'abort-controller';
+
+import { LinkedCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { cleanObserver, isFunction } from '../utils';
 
@@ -8,34 +9,22 @@ import { cleanObserver, isFunction } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new LinkedCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { source, bipredicate } = this;
 
   let retries = 0;
 
   const sub = () => {
-    if (signal.aborted) {
-      return;
-    }
     retries += 1;
-
+    controller.unlink();
     source.subscribeWith({
       onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
+        controller.link(ac);
       },
-      onSuccess(x) {
-        onSuccess(x);
-        controller.abort();
-      },
+      onSuccess,
       onError(x) {
         if (isFunction(bipredicate)) {
           const result = bipredicate(retries, x);
@@ -44,7 +33,7 @@ function subscribeActual(observer) {
             sub();
           } else {
             onError(x);
-            controller.abort();
+            controller.cancel();
           }
         } else {
           sub();
