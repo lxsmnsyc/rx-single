@@ -1,4 +1,5 @@
-import AbortController from 'abort-controller';
+
+import { CompositeCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { cleanObserver } from '../utils';
 
@@ -8,47 +9,37 @@ import { cleanObserver } from '../utils';
 function subscribeActual(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new CompositeCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { source, other } = this;
 
   other.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.add(ac);
     },
     onSuccess() {
       onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
-      controller.abort();
+      controller.cancel();
     },
     onError(x) {
       onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
-      controller.abort();
+      controller.cancel();
     },
   });
 
   source.subscribeWith({
     onSubscribe(ac) {
-      if (signal.aborted) {
-        ac.abort();
-      } else {
-        signal.addEventListener('abort', () => ac.abort());
-      }
+      controller.add(ac);
     },
     onSuccess(x) {
       onSuccess(x);
-      controller.abort();
+      controller.cancel();
     },
     onError(x) {
       onError(x);
-      controller.abort();
+      controller.cancel();
     },
   });
 }
