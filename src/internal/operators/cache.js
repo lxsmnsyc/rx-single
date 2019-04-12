@@ -37,6 +37,7 @@ function subscribeActual(observer) {
           for (const obs of observers) {
             obs.onSuccess(x);
           }
+          controller.cancel();
           this.observers = undefined;
         },
         onError: (x) => {
@@ -47,6 +48,7 @@ function subscribeActual(observer) {
           for (const obs of observers) {
             obs.onError(x);
           }
+          controller.cancel();
           this.observers = undefined;
         },
       });
