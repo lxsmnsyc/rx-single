@@ -1,9 +1,7 @@
-import AbortController from 'abort-controller';
-import {
-  onErrorHandler, onSuccessHandler, cleanObserver,
-} from '../utils';
+import { cleanObserver } from '../utils';
 import Single from '../../single';
 import error from './error';
+import SingleEmitter from '../../single-emitter';
 
 /**
  * @ignore
@@ -11,13 +9,7 @@ import error from './error';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const emitter = new AbortController();
-  emitter.onSuccess = onSuccessHandler.bind(this);
-  emitter.onError = onErrorHandler.bind(this);
-
-  this.controller = emitter;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
+  const emitter = new SingleEmitter(onSuccess, onError);
 
   onSubscribe(emitter);
 
