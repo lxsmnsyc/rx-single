@@ -2,7 +2,7 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var AbortController = _interopDefault(require('abort-controller'));
+var rxCancellable = require('rx-cancellable');
 var Scheduler = _interopDefault(require('rx-scheduler'));
 
 /**
@@ -41,43 +41,7 @@ const isPromise = (obj) => {
   if (obj == null) return false;
   if (obj instanceof Promise) return true;
   return (isObject(obj) || isFunction(obj)) && isFunction(obj.then);
-};/**
- * @ignore
- */
-function onSuccessHandler(value) {
-  const { onSuccess, onError, controller } = this;
-  if (controller.signal.aborted) {
-    return;
-  }
-  try {
-    if (typeof value === 'undefined') {
-      onError(new Error('onSuccess called with a null value.'));
-    } else {
-      onSuccess(value);
-    }
-  } finally {
-    controller.abort();
-  }
-}
-/**
- * @ignore
- */
-function onErrorHandler(err) {
-  const { onError, controller } = this;
-  let report = err;
-  if (!(err instanceof Error)) {
-    report = new Error('onError called with a non-Error value.');
-  }
-  if (controller.signal.aborted) {
-    return;
-  }
-
-  try {
-    onError(report);
-  } finally {
-    controller.abort();
-  }
-}
+};
 /**
  * @ignore
  */
@@ -98,14 +62,13 @@ const cleanObserver = x => ({
  * @ignore
  */
 const immediateSuccess = (o, x) => {
-  // const disposable = new SimpleDisposable();
   const { onSubscribe, onSuccess } = cleanObserver(o);
-  const controller = new AbortController();
+  const controller = new rxCancellable.BooleanCancellable();
   onSubscribe(controller);
 
-  if (!controller.signal.aborted) {
+  if (!controller.cancelled) {
     onSuccess(x);
-    controller.abort();
+    controller.cancel();
   }
 };
 /**
@@ -113,12 +76,12 @@ const immediateSuccess = (o, x) => {
  */
 const immediateError = (o, x) => {
   const { onSubscribe, onError } = cleanObserver(o);
-  const controller = new AbortController();
+  const controller = new rxCancellable.BooleanCancellable();
   onSubscribe(controller);
 
-  if (!controller.signal.aborted) {
+  if (!controller.cancelled) {
     onError(x);
-    controller.abort();
+    controller.cancel();
   }
 };
 
@@ -164,41 +127,35 @@ var error = (value) => {
 function subscribeActual$1(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.CompositeCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { sources } = this;
 
   for (const single of sources) {
-    if (signal.aborted) {
+    if (controller.cancelled) {
       return;
     }
 
     if (single instanceof Single) {
       single.subscribeWith({
-        onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+        onSubscribe(c) {
+          controller.add(c);
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
           onSuccess(x);
-          controller.abort();
+          controller.cancel();
         },
         onError(x) {
           onError(x);
-          controller.abort();
+          controller.cancel();
         },
       });
     } else {
       onError(new Error('Single.amb: One of the sources is a non-Single.'));
-      controller.abort();
+      controller.cancel();
       break;
     }
   }
@@ -218,70 +175,17 @@ var amb = (sources) => {
 /**
  * @ignore
  */
-function subscribeActual$2(observer) {
-  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
-
-  const controller = new AbortController();
-
-  const { signal } = controller;
-
-  onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
-
-  const sharedSuccess = (x) => {
-    if (!signal.aborted) {
-      onSuccess(x);
-      controller.abort();
-    }
-  };
-  const sharedError = (x) => {
-    if (!signal.aborted) {
-      onError(x);
-      controller.abort();
-    }
-  };
-
-  const { source, other } = this;
-
-  source.subscribeWith({
-    onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
-    },
-    onSuccess: sharedSuccess,
-    onError: sharedError,
-  });
-  other.subscribeWith({
-    onSubscribe(ac) {
-      if (signal.aborted) {
-        ac.abort();
-      } else {
-        signal.addEventListener('abort', () => ac.abort());
-      }
-    },
-    onSuccess: sharedSuccess,
-    onError: sharedError,
-  });
-}
-/**
- * @ignore
- */
 var ambWith = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
-  const single = new Single(subscribeActual$2);
-  single.source = source;
-  single.other = other;
-  return single;
+  return amb([source, other]);
 };
 
 /**
  * @ignore
  */
-function subscribeActual$3(observer) {
+function subscribeActual$2(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const {
@@ -292,9 +196,9 @@ function subscribeActual$3(observer) {
     const index = observers.length;
     observers[index] = observer;
 
-    const controller = new AbortController();
+    const controller = new rxCancellable.BooleanCancellable();
 
-    controller.signal.addEventListener('abort', () => {
+    controller.addEventListener('cancel', () => {
       observers.splice(index, 1);
     });
 
@@ -329,7 +233,7 @@ function subscribeActual$3(observer) {
       this.subscribed = true;
     }
   } else {
-    const controller = new AbortController();
+    const controller = new rxCancellable.BooleanCancellable();
     onSubscribe(controller);
 
     const { value, error } = this;
@@ -339,7 +243,7 @@ function subscribeActual$3(observer) {
     if (error != null) {
       onError(error);
     }
-    controller.abort();
+    controller.cancel();
   }
 }
 
@@ -347,7 +251,7 @@ function subscribeActual$3(observer) {
  * @ignore
  */
 var cache = (source) => {
-  const single = new Single(subscribeActual$3);
+  const single = new Single(subscribeActual$2);
   single.source = source;
   single.cached = false;
   single.subscribed = false;
@@ -358,16 +262,114 @@ var cache = (source) => {
 /**
  * @ignore
  */
-function subscribeActual$4(observer) {
+const LINK = new WeakMap();
+/**
+ * Abstraction over a SingleObserver that allows associating
+ * a resource with it.
+ *
+ * Calling onSuccess(Object) multiple times has no effect.
+ * Calling onError(Error) multiple times or after onSuccess
+ * has no effect.
+ */
+// eslint-disable-next-line no-unused-vars
+class SingleEmitter extends rxCancellable.Cancellable {
+  constructor(success, error) {
+    super();
+
+    this.success = success;
+    this.error = error;
+
+    LINK.set(this, new rxCancellable.BooleanCancellable());
+  }
+
+  /**
+   * Returns true if the emitter is cancelled.
+   * @returns {boolean}
+   */
+  get cancelled() {
+    return LINK.get(this).cancelled;
+  }
+
+  /**
+   * Returns true if the emitter is cancelled successfully.
+   * @returns {boolean}
+   */
+  cancel() {
+    return LINK.get(this).cancel();
+  }
+
+  /**
+   * Set the given Cancellable as the Emitter's cancellable state.
+   * @param {Cancellable} cancellable
+   * The Cancellable instance
+   * @returns {boolean}
+   * Returns true if the cancellable is valid.
+   */
+  setCancellable(cancellable) {
+    if (cancellable instanceof rxCancellable.Cancellable) {
+      if (this.cancelled) {
+        cancellable.cancel();
+      } else if (cancellable.cancelled) {
+        this.cancel();
+        return true;
+      } else {
+        const link = LINK.get(this);
+        LINK.set(this, cancellable);
+        link.cancel();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Emits a success value.
+   * @param {!any} value
+   */
+  // eslint-disable-next-line class-methods-use-this, no-unused-vars
+  onSuccess(value) {
+    if (this.cancelled) {
+      return;
+    }
+    try {
+      if (typeof value === 'undefined') {
+        this.error(new Error('onSuccess called with a null value.'));
+      } else {
+        this.success(value);
+      }
+    } finally {
+      this.cancel();
+    }
+  }
+
+  /**
+   * Emits an error value.
+   * @param {!Error} err
+   */
+  // eslint-disable-next-line class-methods-use-this, no-unused-vars
+  onError(err) {
+    let report = err;
+    if (!(err instanceof Error)) {
+      report = new Error('onError called with a non-Error value.');
+    }
+    if (this.cancelled) {
+      return;
+    }
+    try {
+      this.error(report);
+    } finally {
+      this.cancel();
+    }
+  }
+}
+
+/**
+ * @ignore
+ */
+function subscribeActual$3(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const emitter = new AbortController();
-  emitter.onSuccess = onSuccessHandler.bind(this);
-  emitter.onError = onErrorHandler.bind(this);
-
-  this.controller = emitter;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
+  const emitter = new SingleEmitter(onSuccess, onError);
 
   onSubscribe(emitter);
 
@@ -384,7 +386,7 @@ var create = (subscriber) => {
   if (typeof subscriber !== 'function') {
     return error(new Error('Single.create: There are no subscribers.'));
   }
-  const single = new Single(subscribeActual$4);
+  const single = new Single(subscribeActual$3);
   single.subscriber = subscriber;
   return single;
 };
@@ -420,7 +422,7 @@ const containsComparer = (x, y) => x === y;
 /**
  * @ignore
  */
-function subscribeActual$5(observer) {
+function subscribeActual$4(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { value, comparer } = this;
@@ -453,7 +455,7 @@ var contains = (source, value, comparer) => {
     cmp = containsComparer;
   }
 
-  const single = new Single(subscribeActual$5);
+  const single = new Single(subscribeActual$4);
   single.source = source;
   single.value = value;
   single.comparer = cmp;
@@ -463,7 +465,7 @@ var contains = (source, value, comparer) => {
 /**
  * @ignore
  */
-function subscribeActual$6(observer) {
+function subscribeActual$5(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   let result;
@@ -492,7 +494,7 @@ function subscribeActual$6(observer) {
  * @ignore
  */
 var defer = (supplier) => {
-  const single = new Single(subscribeActual$6);
+  const single = new Single(subscribeActual$5);
   single.supplier = supplier;
   return single;
 };
@@ -500,46 +502,32 @@ var defer = (supplier) => {
 /**
  * @ignore
  */
-function subscribeActual$7(observer) {
+function subscribeActual$6(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount, scheduler, doDelayError } = this;
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
 
-  if (signal.aborted) {
-    return;
-  }
-
   this.source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => {
-        ac.abort();
-      });
+      controller.link(ac);
     },
     onSuccess(x) {
-      const ac = scheduler.delay(() => {
-        onSuccess(x);
-        controller.abort();
-      }, amount);
-
-      signal.addEventListener('abort', () => {
-        ac.abort();
-      });
+      controller.link(
+        scheduler.delay(() => {
+          onSuccess(x);
+        }, amount),
+      );
     },
     onError(x) {
-      const ac = scheduler.delay(() => {
-        onError(x);
-        controller.abort();
-      }, doDelayError ? amount : 0);
-
-      signal.addEventListener('abort', () => {
-        ac.abort();
-      });
+      controller.link(
+        scheduler.delay(() => {
+          onError(x);
+        }, doDelayError ? amount : 0),
+      );
     },
   });
 }
@@ -554,7 +542,7 @@ var delay = (source, amount, scheduler, doDelayError) => {
   if (!(sched instanceof Scheduler.interface)) {
     sched = Scheduler.current;
   }
-  const single = new Single(subscribeActual$7);
+  const single = new Single(subscribeActual$6);
   single.source = source;
   single.amount = amount;
   single.scheduler = sched;
@@ -565,37 +553,26 @@ var delay = (source, amount, scheduler, doDelayError) => {
 /**
  * @ignore
  */
-function subscribeActual$8(observer) {
+function subscribeActual$7(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const { amount, scheduler } = this;
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const { amount, scheduler, source } = this;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
 
-  if (signal.aborted) {
-    return;
-  }
-
-  const abortable = scheduler.delay(() => {
-    this.source.subscribeWith({
-      onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
-      },
-      onSuccess(x) {
-        onSuccess(x);
-        controller.abort();
-      },
-      onError(x) {
-        onError(x);
-        controller.abort();
-      },
-    });
-  }, amount);
-
-  signal.addEventListener('abort', () => abortable.abort());
+  controller.link(
+    scheduler.delay(() => {
+      controller.unlink();
+      source.subscribeWith({
+        onSubscribe(ac) {
+          controller.link(ac);
+        },
+        onSuccess,
+        onError,
+      });
+    }, amount),
+  );
 }
 /**
  * @ignore
@@ -608,7 +585,7 @@ var delaySubscription = (source, amount, scheduler) => {
   if (!(sched instanceof Scheduler.interface)) {
     sched = Scheduler.current;
   }
-  const single = new Single(subscribeActual$8);
+  const single = new Single(subscribeActual$7);
   single.source = source;
   single.amount = amount;
   single.scheduler = sched;
@@ -618,46 +595,30 @@ var delaySubscription = (source, amount, scheduler) => {
 /**
  * @ignore
  */
-function subscribeActual$9(observer) {
+function subscribeActual$8(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, other } = this;
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
 
-  if (signal.aborted) {
-    return;
-  }
-
   other.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
     onSuccess() {
-      if (!signal.aborted) {
-        source.subscribeWith({
-          onSubscribe(ac) {
-            signal.addEventListener('abort', () => ac.abort());
-          },
-          onSuccess(x) {
-            onSuccess(x);
-            controller.abort();
-          },
-          onError(x) {
-            onError(x);
-            controller.abort();
-          },
-        });
-      }
+      controller.unlink();
+      source.subscribeWith({
+        onSubscribe(ac) {
+          controller.link(ac);
+        },
+        onSuccess,
+        onError,
+      });
     },
-    onError(x) {
-      onError(x);
-      controller.abort();
-    },
+    onError,
   });
 }
 /**
@@ -667,7 +628,7 @@ var delayUntil = (source, other) => {
   if (!(other instanceof Single)) {
     return source;
   }
-  const single = new Single(subscribeActual$9);
+  const single = new Single(subscribeActual$8);
   single.source = source;
   single.other = other;
   return single;
@@ -676,7 +637,7 @@ var delayUntil = (source, other) => {
 /**
  * @ignore
  */
-function subscribeActual$a(observer) {
+function subscribeActual$9(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -699,7 +660,7 @@ var doAfterSuccess = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$a);
+  const single = new Single(subscribeActual$9);
   single.source = source;
   single.callable = callable;
   return single;
@@ -708,7 +669,7 @@ var doAfterSuccess = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$b(observer) {
+function subscribeActual$a(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -734,7 +695,7 @@ var doAfterTerminate = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$b);
+  const single = new Single(subscribeActual$a);
   single.source = source;
   single.callable = callable;
   return single;
@@ -743,7 +704,7 @@ var doAfterTerminate = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$c(observer) {
+function subscribeActual$b(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -751,7 +712,7 @@ function subscribeActual$c(observer) {
   let called = false;
   source.subscribeWith({
     onSubscribe(ac) {
-      ac.signal.addEventListener('abort', () => {
+      ac.addEventListener('cancel', () => {
         if (!called) {
           callable();
           called = true;
@@ -784,7 +745,7 @@ var doFinally = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$c);
+  const single = new Single(subscribeActual$b);
   single.source = source;
   single.callable = callable;
   return single;
@@ -793,14 +754,14 @@ var doFinally = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$d(observer) {
+function subscribeActual$c(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
 
   source.subscribeWith({
     onSubscribe(ac) {
-      ac.signal.addEventListener('abort', callable);
+      ac.addEventListener('cancel', callable);
       onSubscribe(ac);
     },
     onSuccess,
@@ -811,12 +772,12 @@ function subscribeActual$d(observer) {
 /**
  * @ignore
  */
-var doOnAbort = (source, callable) => {
+var doOnCancel = (source, callable) => {
   if (!isFunction(callable)) {
     return source;
   }
 
-  const single = new Single(subscribeActual$d);
+  const single = new Single(subscribeActual$c);
   single.source = source;
   single.callable = callable;
   return single;
@@ -825,7 +786,7 @@ var doOnAbort = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$e(observer) {
+function subscribeActual$d(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -848,7 +809,7 @@ var doOnError = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$e);
+  const single = new Single(subscribeActual$d);
   single.source = source;
   single.callable = callable;
   return single;
@@ -857,7 +818,7 @@ var doOnError = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$f(observer) {
+function subscribeActual$e(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -883,7 +844,7 @@ var doOnEvent = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$f);
+  const single = new Single(subscribeActual$e);
   single.source = source;
   single.callable = callable;
   return single;
@@ -892,7 +853,7 @@ var doOnEvent = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$g(observer) {
+function subscribeActual$f(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -915,7 +876,7 @@ var doOnSuccess = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$g);
+  const single = new Single(subscribeActual$f);
   single.source = source;
   single.callable = callable;
   return single;
@@ -924,7 +885,7 @@ var doOnSuccess = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$h(observer) {
+function subscribeActual$g(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -946,7 +907,7 @@ var doOnSubscribe = (source, callable) => {
   if (!isFunction(callable)) {
     return source;
   }
-  const single = new Single(subscribeActual$h);
+  const single = new Single(subscribeActual$g);
   single.source = source;
   single.callable = callable;
   return single;
@@ -955,7 +916,7 @@ var doOnSubscribe = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$i(observer) {
+function subscribeActual$h(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, callable } = this;
@@ -981,7 +942,7 @@ var doOnTerminate = (source, callable) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$i);
+  const single = new Single(subscribeActual$h);
   single.source = source;
   single.callable = callable;
   return single;
@@ -990,26 +951,21 @@ var doOnTerminate = (source, callable) => {
 /**
  * @ignore
  */
-function subscribeActual$j(observer) {
+function subscribeActual$i(observer) {
   const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { mapper, source } = this;
 
   source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
     onSuccess(x) {
+      controller.unlink();
       let result;
       try {
         result = mapper(x);
@@ -1019,26 +975,18 @@ function subscribeActual$j(observer) {
         }
       } catch (e) {
         onError(e);
+        controller.cancel();
         return;
       }
       result.subscribeWith({
         onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+          controller.link(ac);
         },
-        onSuccess(v) {
-          onSuccess(v);
-          controller.abort();
-        },
-        onError(v) {
-          onError(v);
-          controller.abort();
-        },
+        onSuccess,
+        onError,
       });
     },
-    onError(v) {
-      onError(v);
-      controller.abort();
-    },
+    onError,
   });
 }
 
@@ -1050,9 +998,36 @@ var flatMap = (source, mapper) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$j);
+  const single = new Single(subscribeActual$i);
   single.source = source;
   single.mapper = mapper;
+  return single;
+};
+
+/**
+ * @ignore
+ */
+function subscribeActual$j(observer) {
+  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
+
+  const emitter = new SingleEmitter(onSuccess, onError);
+
+  onSubscribe(emitter);
+
+  this.promise.then(
+    x => emitter.onSuccess(x),
+    x => emitter.onError(x),
+  );
+}
+/**
+ * @ignore
+ */
+var fromPromise = (promise) => {
+  if (!isPromise(promise)) {
+    return error(new Error('Single.fromPromise: expects a Promise-like value.'));
+  }
+  const single = new Single(subscribeActual$j);
+  single.promise = promise;
   return single;
 };
 
@@ -1062,39 +1037,32 @@ var flatMap = (source, mapper) => {
 function subscribeActual$k(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const controller = new AbortController();
+  const emitter = new SingleEmitter(onSuccess, onError);
 
-  onSubscribe(controller);
-
-  if (controller.signal.aborted) {
-    return;
-  }
-
-  this.controller = controller;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
-
-  const resolve = onSuccessHandler.bind(this);
-  const reject = onErrorHandler.bind(this);
+  onSubscribe(emitter);
 
   let result;
   try {
     result = this.callable();
   } catch (e) {
-    reject(e);
+    emitter.onError(e);
     return;
   }
 
   if (isPromise(result)) {
     fromPromise(result).subscribeWith({
       onSubscribe(ac) {
-        controller.signal.addEventListener('abort', () => ac.abort());
+        emitter.setCancellable(ac);
       },
-      onSuccess: resolve,
-      onError: reject,
+      onSuccess(x) {
+        emitter.onSuccess(x);
+      },
+      onError(e) {
+        emitter.onError(e);
+      },
     });
   } else {
-    resolve(result);
+    emitter.onSuccess(result);
   }
 }
 /**
@@ -1109,60 +1077,17 @@ var fromCallable = (callable) => {
   return single;
 };
 
-/**
- * @ignore
- */
 function subscribeActual$l(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const controller = new AbortController();
+  const emitter = new SingleEmitter(onSuccess, onError);
 
-  onSubscribe(controller);
+  onSubscribe(emitter);
 
-  if (controller.signal.aborted) {
-    return;
-  }
-
-  this.controller = controller;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
-
-  this.promise.then(
-    onSuccessHandler.bind(this),
-    onErrorHandler.bind(this),
+  this.subscriber(
+    x => emitter.onSuccess(x),
+    x => emitter.onError(x),
   );
-}
-/**
- * @ignore
- */
-var fromPromise = (promise) => {
-  if (!isPromise(promise)) {
-    return error(new Error('Single.fromPromise: expects a Promise-like value.'));
-  }
-  const single = new Single(subscribeActual$l);
-  single.promise = promise;
-  return single;
-};
-
-function subscribeActual$m(observer) {
-  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
-
-  const controller = new AbortController();
-
-  onSubscribe(controller);
-
-  if (controller.signal.aborted) {
-    return;
-  }
-
-  this.controller = controller;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
-
-  const resolve = onSuccessHandler.bind(this);
-  const reject = onErrorHandler.bind(this);
-
-  this.subscriber(resolve, reject);
 }
 /**
  * @ignore
@@ -1171,7 +1096,7 @@ var fromResolvable = (subscriber) => {
   if (!isFunction(subscriber)) {
     return error(new Error('Single.fromResolvable: expects a function.'));
   }
-  const single = new Single(subscribeActual$m);
+  const single = new Single(subscribeActual$l);
   single.subscriber = subscriber;
   return single;
 };
@@ -1179,7 +1104,7 @@ var fromResolvable = (subscriber) => {
 /**
  * @ignore
  */
-function subscribeActual$n(observer) {
+function subscribeActual$m(observer) {
   immediateSuccess(observer, this.value);
 }
 /**
@@ -1189,7 +1114,7 @@ var just = (value) => {
   if (value == null) {
     return error(new Error('Single.just: received a null value.'));
   }
-  const single = new Single(subscribeActual$n);
+  const single = new Single(subscribeActual$m);
   single.value = value;
   return single;
 };
@@ -1197,7 +1122,7 @@ var just = (value) => {
 /**
  * @ignore
  */
-function subscribeActual$o(observer) {
+function subscribeActual$n(observer) {
   let result;
 
   try {
@@ -1222,7 +1147,7 @@ var lift = (source, operator) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$o);
+  const single = new Single(subscribeActual$n);
   single.source = source;
   single.operator = operator;
   return single;
@@ -1236,7 +1161,7 @@ const defaultMapper = x => x;
 /**
  * @ignore
  */
-function subscribeActual$p(observer) {
+function subscribeActual$o(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { mapper } = this;
@@ -1268,7 +1193,7 @@ var map = (source, mapper) => {
     ms = defaultMapper;
   }
 
-  const single = new Single(subscribeActual$p);
+  const single = new Single(subscribeActual$o);
   single.source = source;
   single.mapper = ms;
   return single;
@@ -1277,46 +1202,32 @@ var map = (source, mapper) => {
 /**
  * @ignore
  */
-function subscribeActual$q(observer) {
+function subscribeActual$p(observer) {
   const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
 
-  if (signal.aborted) {
-    return;
-  }
-
   this.source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
     onSuccess(x) {
+      controller.unlink();
       let result = x;
       if (!(x instanceof Single)) {
         result = error(new Error('Single.merge: source emitted a non-Single value.'));
       }
       result.subscribeWith({
         onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+          controller.link(ac);
         },
-        onSuccess(v) {
-          onSuccess(v);
-          controller.abort();
-        },
-        onError(v) {
-          onError(v);
-          controller.abort();
-        },
+        onSuccess,
+        onError,
       });
     },
-    onError(v) {
-      onError(v);
-      controller.abort();
-    },
+    onError,
   });
 }
 
@@ -1328,40 +1239,33 @@ var merge = (source) => {
     return error(new Error('Single.merge: source is not a Single.'));
   }
 
-  const single = new Single(subscribeActual$q);
+  const single = new Single(subscribeActual$p);
   single.source = source;
   return single;
 };
 
-function subscribeActual$r(observer) {
+function subscribeActual$q(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
   const { source, scheduler } = this;
 
-  const controller = new AbortController();
+  const controller = new rxCancellable.LinkedCancellable();
+
   onSubscribe(controller);
-
-  const { signal } = controller;
-
-  if (signal.aborted) {
-    return;
-  }
 
   source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
     onSuccess(x) {
-      scheduler.schedule(() => {
+      controller.link(scheduler.schedule(() => {
         onSuccess(x);
-        controller.abort();
-      });
+      }));
     },
     onError(x) {
-      scheduler.schedule(() => {
+      controller.link(scheduler.schedule(() => {
         onError(x);
-        controller.abort();
-      });
+      }));
     },
   });
 }
@@ -1373,36 +1277,28 @@ var observeOn = (source, scheduler) => {
   if (!(sched instanceof Scheduler.interface)) {
     sched = Scheduler.current;
   }
-  const single = new Single(subscribeActual$r);
+  const single = new Single(subscribeActual$q);
   single.source = source;
   single.scheduler = sched;
   return single;
 };
 
-function subscribeActual$s(observer) {
+function subscribeActual$r(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, resumeIfError } = this;
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
 
-  if (signal.aborted) {
-    return;
-  }
-
   source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
-    onSuccess(x) {
-      onSuccess(x);
-      controller.abort();
-    },
+    onSuccess,
     onError(x) {
+      controller.unlink();
       let result;
 
       if (isFunction(resumeIfError)) {
@@ -1413,6 +1309,7 @@ function subscribeActual$s(observer) {
           }
         } catch (e) {
           onError(new Error([x, e]));
+          controller.cancel();
           return;
         }
       } else {
@@ -1421,16 +1318,10 @@ function subscribeActual$s(observer) {
 
       result.subscribeWith({
         onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+          controller.link(ac);
         },
-        onSuccess(v) {
-          onSuccess(v);
-          controller.abort();
-        },
-        onError(v) {
-          onError(v);
-          controller.abort();
-        },
+        onSuccess,
+        onError,
       });
     },
   });
@@ -1443,13 +1334,13 @@ var onErrorResumeNext = (source, resumeIfError) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$s);
+  const single = new Single(subscribeActual$r);
   single.source = source;
   single.resumeIfError = resumeIfError;
   return single;
 };
 
-function subscribeActual$t(observer) {
+function subscribeActual$s(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { source, item } = this;
@@ -1482,13 +1373,13 @@ var onErrorReturn = (source, item) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$t);
+  const single = new Single(subscribeActual$s);
   single.source = source;
   single.item = item;
   return single;
 };
 
-function subscribeActual$u(observer) {
+function subscribeActual$t(observer) {
   const { onSuccess, onSubscribe } = cleanObserver(observer);
 
   const { source, item } = this;
@@ -1509,32 +1400,18 @@ var onErrorReturnItem = (source, item) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$u);
+  const single = new Single(subscribeActual$t);
   single.source = source;
   single.item = item;
   return single;
 };
 
 /* eslint-disable class-methods-use-this */
-
-const SIGNAL = {
-  aborted: false,
-  addEventListener: () => {},
-  removeEventListener: () => {},
-  onabort: () => {},
-};
-
-
-const CONTROLLER = {
-  signal: SIGNAL,
-  abort: () => {},
-};
-
 /**
  * @ignore
  */
-function subscribeActual$v(observer) {
-  observer.onSubscribe(CONTROLLER);
+function subscribeActual$u(observer) {
+  observer.onSubscribe(rxCancellable.UNCANCELLED);
 }
 /**
  * @ignore
@@ -1545,8 +1422,7 @@ let INSTANCE;
  */
 var never = () => {
   if (typeof INSTANCE === 'undefined') {
-    INSTANCE = new Single(subscribeActual$v);
-    INSTANCE.subscribeActual = subscribeActual$v.bind(INSTANCE);
+    INSTANCE = new Single(subscribeActual$u);
   }
   return INSTANCE;
 };
@@ -1554,37 +1430,25 @@ var never = () => {
 /**
  * @ignore
  */
-function subscribeActual$w(observer) {
+function subscribeActual$v(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { source, bipredicate } = this;
 
   let retries = 0;
 
   const sub = () => {
-    if (signal.aborted) {
-      return;
-    }
     retries += 1;
-
+    controller.unlink();
     source.subscribeWith({
       onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
+        controller.link(ac);
       },
-      onSuccess(x) {
-        onSuccess(x);
-        controller.abort();
-      },
+      onSuccess,
       onError(x) {
         if (isFunction(bipredicate)) {
           const result = bipredicate(retries, x);
@@ -1593,7 +1457,7 @@ function subscribeActual$w(observer) {
             sub();
           } else {
             onError(x);
-            controller.abort();
+            controller.cancel();
           }
         } else {
           sub();
@@ -1609,44 +1473,31 @@ function subscribeActual$w(observer) {
  * @ignore
  */
 var retry = (source, bipredicate) => {
-  const single = new Single(subscribeActual$w);
+  const single = new Single(subscribeActual$v);
   single.source = source;
   single.bipredicate = bipredicate;
   return single;
 };
 
-function subscribeActual$x(observer) {
+function subscribeActual$w(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
   const { source, scheduler } = this;
 
-  const controller = new AbortController();
+  const controller = new rxCancellable.LinkedCancellable();
+
   onSubscribe(controller);
 
-  const { signal } = controller;
-
-  if (signal.aborted) {
-    return;
-  }
-
-  scheduler.schedule(() => {
-    if (signal.aborted) {
-      return;
-    }
+  controller.link(scheduler.schedule(() => {
+    controller.unlink();
     source.subscribeWith({
       onSubscribe(ac) {
-        signal.addEventListener('abort', () => ac.abort());
+        controller.link(ac);
       },
-      onSuccess(x) {
-        onSuccess(x);
-        controller.abort();
-      },
-      onError(x) {
-        onError(x);
-        controller.abort();
-      },
+      onSuccess,
+      onError,
     });
-  });
+  }));
 }
 /**
  * @ignore
@@ -1656,7 +1507,7 @@ var subscribeOn = (source, scheduler) => {
   if (!(sched instanceof Scheduler.interface)) {
     sched = Scheduler.current;
   }
-  const single = new Single(subscribeActual$x);
+  const single = new Single(subscribeActual$w);
   single.source = source;
   single.scheduler = sched;
   return single;
@@ -1665,50 +1516,40 @@ var subscribeOn = (source, scheduler) => {
 /**
  * @ignore
  */
-function subscribeActual$y(observer) {
+function subscribeActual$x(observer) {
   const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.CompositeCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { source, other } = this;
 
   other.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.add(ac);
     },
     onSuccess() {
       onError(new Error('Single.takeUntil: Source cancelled by other Single.'));
-      controller.abort();
+      controller.cancel();
     },
     onError(x) {
       onError(new Error(['Single.takeUntil: Source cancelled by other Single.', x]));
-      controller.abort();
+      controller.cancel();
     },
   });
 
   source.subscribeWith({
     onSubscribe(ac) {
-      if (signal.aborted) {
-        ac.abort();
-      } else {
-        signal.addEventListener('abort', () => ac.abort());
-      }
+      controller.add(ac);
     },
     onSuccess(x) {
       onSuccess(x);
-      controller.abort();
+      controller.cancel();
     },
     onError(x) {
       onError(x);
-      controller.abort();
+      controller.cancel();
     },
   });
 }
@@ -1721,7 +1562,7 @@ const takeUntil = (source, other) => {
     return source;
   }
 
-  const single = new Single(subscribeActual$y);
+  const single = new Single(subscribeActual$x);
   single.source = source;
   single.other = other;
   return single;
@@ -1730,22 +1571,9 @@ const takeUntil = (source, other) => {
 /**
  * @ignore
  */
-function subscribeActual$z(observer) {
+function subscribeActual$y(observer) {
   const { onSuccess, onSubscribe } = cleanObserver(observer);
-
-  const controller = new AbortController();
-
-  const { signal } = controller;
-
-  onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
-
-  const timeout = this.scheduler.delay(() => onSuccess(0), this.amount);
-
-  signal.addEventListener('abort', () => timeout.abort());
+  onSubscribe(this.scheduler.delay(() => onSuccess(0), this.amount));
 }
 /**
  * @ignore
@@ -1759,7 +1587,7 @@ var timer = (amount, scheduler) => {
   if (!(sched instanceof Scheduler.interface)) {
     sched = Scheduler.current;
   }
-  const single = new Single(subscribeActual$z);
+  const single = new Single(subscribeActual$y);
   single.amount = amount;
   single.scheduler = sched;
   return single;
@@ -1768,43 +1596,31 @@ var timer = (amount, scheduler) => {
 /**
  * @ignore
  */
-function subscribeActual$A(observer) {
+function subscribeActual$z(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const { amount, scheduler } = this;
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.LinkedCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const timeout = scheduler.delay(
     () => {
       onError(new Error('Single.timeout: TimeoutException (no success signals within the specified timeout).'));
-      controller.abort();
+      controller.cancel();
     },
     amount,
   );
 
-  signal.addEventListener('abort', () => timeout.abort());
+  controller.addEventListener('cancel', () => timeout.cancel());
 
   this.source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
-    onSuccess(x) {
-      onSuccess(x);
-      controller.abort();
-    },
-    onError(x) {
-      onError(x);
-      controller.abort();
-    },
+    onSuccess,
+    onError,
   });
 }
 /**
@@ -1818,7 +1634,7 @@ var timeout = (source, amount, scheduler) => {
   if (!(sched instanceof Scheduler.interface)) {
     sched = Scheduler.current;
   }
-  const single = new Single(subscribeActual$A);
+  const single = new Single(subscribeActual$z);
   single.source = source;
   single.amount = amount;
   single.scheduler = sched;
@@ -1829,20 +1645,14 @@ const defaultZipper = x => x;
 /**
  * @ignore
  */
-function subscribeActual$B(observer) {
+function subscribeActual$A(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
   const result = [];
 
-  const controller = new AbortController();
-
-  const { signal } = controller;
+  const controller = new rxCancellable.CompositeCancellable();
 
   onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
 
   const { sources, zipper } = this;
 
@@ -1850,13 +1660,13 @@ function subscribeActual$B(observer) {
 
   if (size === 0) {
     onError(new Error('Single.zip: empty iterable'));
-    controller.abort();
+    controller.cancel();
     return;
   }
   let pending = size;
 
   for (let i = 0; i < size; i += 1) {
-    if (signal.aborted) {
+    if (controller.cancelled) {
       return;
     }
     const single = sources[i];
@@ -1864,13 +1674,10 @@ function subscribeActual$B(observer) {
     if (single instanceof Single) {
       single.subscribeWith({
         onSubscribe(ac) {
-          signal.addEventListener('abort', () => ac.abort());
+          controller.add(ac);
         },
         // eslint-disable-next-line no-loop-func
         onSuccess(x) {
-          if (signal.aborted) {
-            return;
-          }
           result[i] = x;
           pending -= 1;
           if (pending === 0) {
@@ -1882,16 +1689,16 @@ function subscribeActual$B(observer) {
               }
             } catch (e) {
               onError(e);
-              controller.abort();
+              controller.cancel();
               return;
             }
             onSuccess(r);
-            controller.abort();
+            controller.cancel();
           }
         },
         onError(x) {
           onError(x);
-          controller.abort();
+          controller.cancel();
         },
       });
     } else if (single != null) {
@@ -1899,7 +1706,7 @@ function subscribeActual$B(observer) {
       pending -= 1;
     } else {
       onError(new Error('Single.zip: One of the sources is undefined.'));
-      controller.abort();
+      controller.cancel();
       break;
     }
   }
@@ -1915,7 +1722,7 @@ var zip = (sources, zipper) => {
   if (!isFunction(zipper)) {
     fn = defaultZipper;
   }
-  const single = new Single(subscribeActual$B);
+  const single = new Single(subscribeActual$A);
   single.sources = sources;
   single.zipper = fn;
   return single;
@@ -1924,116 +1731,11 @@ var zip = (sources, zipper) => {
 /**
  * @ignore
  */
-const defaultZipper$1 = (x, y) => [x, y];
-/**
- * @ignore
- */
-function subscribeActual$C(observer) {
-  const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
-
-  let SA;
-  let SB;
-
-  const controller = new AbortController();
-
-  const { signal } = controller;
-
-  onSubscribe(controller);
-
-  if (signal.aborted) {
-    return;
-  }
-
-  const { source, other, zipper } = this;
-
-  source.subscribeWith({
-    onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
-    },
-    onSuccess(x) {
-      if (signal.aborted) {
-        return;
-      }
-      SA = x;
-
-      if (SB != null) {
-        let result;
-
-        try {
-          result = zipper(SA, SB);
-
-          if (result == null) {
-            throw new Error('Single.zipWith: zipper function returned a null value.');
-          }
-        } catch (e) {
-          onError(e);
-          controller.abort();
-          return;
-        }
-        onSuccess(result);
-        controller.abort();
-      }
-    },
-    onError(x) {
-      onError(x);
-      controller.abort();
-    },
-  });
-
-  other.subscribeWith({
-    onSubscribe(ac) {
-      if (signal.aborted) {
-        ac.abort();
-      } else {
-        signal.addEventListener('abort', () => ac.abort());
-      }
-    },
-    onSuccess(x) {
-      if (signal.aborted) {
-        return;
-      }
-      SB = x;
-
-      if (SA != null) {
-        let result;
-
-        try {
-          result = zipper(SA, SB);
-
-          if (result == null) {
-            throw new Error('Single.zipWith: zipper function returned a null value.');
-          }
-        } catch (e) {
-          onError(e);
-          controller.abort();
-          return;
-        }
-        onSuccess(result);
-        controller.abort();
-      }
-    },
-    onError(x) {
-      onError(x);
-      controller.abort();
-    },
-  });
-}
-/**
- * @ignore
- */
 var zipWith = (source, other, zipper) => {
   if (!(other instanceof Single)) {
     return source;
   }
-  let fn = zipper;
-  if (!isFunction(zipper)) {
-    fn = defaultZipper$1;
-  }
-  const single = new Single(subscribeActual$C);
-  single.source = source;
-  single.other = other;
-  single.zipper = fn;
-  return single;
+  return zip([source, other], zipper);
 };
 
 /* eslint-disable import/no-cycle */
@@ -2087,8 +1789,8 @@ var zipWith = (source, other, zipper) => {
  * by onError.
  *
  * Like Observable, a running Single can be stopped through
- * the AbortController instance provided to consumers through
- * Observer.onSubscribe(AbortController).
+ * the Cancellable instance provided to consumers through
+ * Observer.onSubscribe(Cancellable).
  *
  * Singles are cold by default, but using a toPromise method,
  * you can achieve a hot-like Single.
@@ -2313,16 +2015,16 @@ class Single {
 
   /**
    * Calls the specified action after this Single signals
-   * onSuccess or onError or gets aborted by the downstream.
+   * onSuccess or onError or gets cancelled by the downstream.
    *
-   * In case of a race between a terminal event and a abort
+   * In case of a race between a terminal event and a cancel
    * call, the provided onFinally action is executed once per
    * subscription.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doFinally.png" class="diagram">
    *
    * @param {!Function} callable
-   * the action function when this Single terminates or gets aborted
+   * the action function when this Single terminates or gets cancelled
    * @returns {Single}
    */
   doFinally(callable) {
@@ -2331,18 +2033,18 @@ class Single {
 
   /**
    * Calls the shared function if a Observer
-   * subscribed to the current Single aborts
-   * the common AbortController it received via
+   * subscribed to the current Single cancels
+   * the common Cancellable it received via
    * onSubscribe.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
    *
    * @param {!Function} callable
-   * the function called when the subscription is aborted
+   * the function called when the subscription is cancelled
    * @returns {Single}
    */
-  doOnAbort(callable) {
-    return doOnAbort(this, callable);
+  doOnCancel(callable) {
+    return doOnCancel(this, callable);
   }
 
   /**
@@ -2375,14 +2077,14 @@ class Single {
   }
 
   /**
-   * Calls the shared function with the AbortController
+   * Calls the shared function with the Cancellable
    * sent through the onSubscribe for each Observer
    * that subscribes to the current Single.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSubscribe.png" class="diagram">
    *
-   * @param {!function(x: AbortController)} callable
-   * the function called with the AbortController sent via onSubscribe
+   * @param {!function(x: Cancellable)} callable
+   * the function called with the Cancellable sent via onSubscribe
    * @returns {Single}
    */
   doOnSubscribe(callable) {
@@ -2544,7 +2246,7 @@ class Single {
    * from the upstream directly or according to the emission
    * pattern the custom operator's business logic requires.
    * In addition, such operator can intercept the flow control
-   * calls of abort and signal.aborted that would have traveled
+   * calls of cancel and signal.cancelled that would have traveled
    * upstream and perform additional actions depending on the
    * same business logic requirements.
    *
@@ -2748,7 +2450,7 @@ class Single {
    *
    * The onSubscribe method is called when subscribeWith
    * or subscribe is executed. This method receives an
-   * AbortController instance.
+   * Cancellable instance.
    *
    * @param {!Object} observer
    * @returns {undefined}
@@ -2774,30 +2476,14 @@ class Single {
    * @param {?function(x: Error)} onError
    * the function you have designed to accept any error
    * notification from the Single
-   * @returns {AbortController}
-   * an AbortController reference can request the Single to abort.
+   * @returns {Cancellable}
+   * an Cancellable reference can request the Single to cancel.
    */
   subscribe(onSuccess, onError) {
-    const controller = new AbortController();
-    let once = false;
+    const controller = new rxCancellable.LinkedCancellable();
     this.subscribeWith({
       onSubscribe(ac) {
-        ac.signal.addEventListener('abort', () => {
-          if (!once) {
-            once = true;
-            if (!controller.signal.aborted) {
-              controller.abort();
-            }
-          }
-        });
-        controller.signal.addEventListener('abort', () => {
-          if (!once) {
-            once = true;
-            if (!ac.signal.aborted) {
-              ac.abort();
-            }
-          }
-        });
+        controller.link(ac);
       },
       onSuccess,
       onError,
@@ -2941,16 +2627,29 @@ class Single {
 
 /**
  * @interface
- * Represents an object that receives notification to
- * an Observer.
+ * Provides a mechanism for receiving push-based notification
+ * of a single value or an error.
  *
- * Emitter is an abstraction layer of the Observer
- */
-
-/**
- * @interface
- * Represents an object that receives notification from
- * an Emitter.
+ * When a SingleObserver is subscribed to a Single through
+ * the Single.subscribe(SingleObserver) method, the Single
+ * calls onSubscribe(Cancellable) with a Cancellable that
+ * allows cancelling the sequence at any time. A well-behaved
+ * Single will call a SingleObserver's onSuccess(Object) method
+ * exactly once or the SingleObserver's onError(Error) method
+ * exactly once as they are considered mutually exclusive
+ * terminal signals.
+ *
+ * the invocation pattern must adhere to the following protocol:
+ *
+ * <code>onSubscribe (onSuccess | onError)?</code>
+ *
+ * Subscribing a SingleObserver to multiple Singles is not recommended.
+ * If such reuse happens, it is the duty of the SingleObserver
+ * implementation to be ready to receive multiple calls to its methods
+ * and ensure proper concurrent behavior of its business logic.
+ *
+ * Calling onSubscribe(Cancellable), onSuccess(Object) or onError(Error)
+ * with a null argument is forbidden.
  */
 
 /* eslint-disable no-unused-vars */
