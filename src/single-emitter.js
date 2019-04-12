@@ -16,8 +16,13 @@ const LINK = new WeakMap();
 export default class SingleEmitter extends Cancellable {
   constructor(success, error) {
     super();
-
+    /**
+     * @ignore
+     */
     this.success = success;
+    /**
+     * @ignore
+     */
     this.error = error;
 
     LINK.set(this, new BooleanCancellable());
