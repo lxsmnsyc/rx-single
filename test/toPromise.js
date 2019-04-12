@@ -5,17 +5,12 @@ import Single from '../src/single';
 /**
  *
  */
-describe('Single', () => {
+describe('#toPromise', () => {
   /**
    *
    */
-  describe('#toPromise', () => {
-    /**
-     *
-     */
-    it('should create a Promise', () => {
-      const single = Single.just('Hello').toPromise();
-      assert(single instanceof Promise);
-    });
+  it('should create a Promise', () => {
+    const single = Single.just('Hello').toPromise();
+    assert(single instanceof Promise);
   });
 });
