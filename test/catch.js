@@ -5,17 +5,12 @@ import Single from '../src/single';
 /**
  *
  */
-describe('Single', () => {
+describe('#catch', () => {
   /**
    *
    */
-  describe('#catch', () => {
-    /**
-     *
-     */
-    it('should create a Promise', () => {
-      const single = Single.just('Hello').catch(x => x);
-      assert(single instanceof Promise);
-    });
+  it('should create a Promise', () => {
+    const single = Single.just('Hello').catch(x => x);
+    assert(single instanceof Promise);
   });
 });
