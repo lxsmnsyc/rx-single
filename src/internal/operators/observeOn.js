@@ -1,5 +1,6 @@
-import AbortController from 'abort-controller';
+
 import Scheduler from 'rx-scheduler';
+import { LinkedCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { cleanObserver } from '../utils';
 
@@ -8,30 +9,23 @@ function subscribeActual(observer) {
 
   const { source, scheduler } = this;
 
-  const controller = new AbortController();
+  const controller = new LinkedCancellable();
+
   onSubscribe(controller);
-
-  const { signal } = controller;
-
-  if (signal.aborted) {
-    return;
-  }
 
   source.subscribeWith({
     onSubscribe(ac) {
-      signal.addEventListener('abort', () => ac.abort());
+      controller.link(ac);
     },
     onSuccess(x) {
-      scheduler.schedule(() => {
+      controller.link(scheduler.schedule(() => {
         onSuccess(x);
-        controller.abort();
-      });
+      }));
     },
     onError(x) {
-      scheduler.schedule(() => {
+      controller.link(scheduler.schedule(() => {
         onError(x);
-        controller.abort();
-      });
+      }));
     },
   });
 }
