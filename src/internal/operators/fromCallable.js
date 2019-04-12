@@ -1,9 +1,10 @@
-import AbortController from 'abort-controller';
-import {
-  onErrorHandler, onSuccessHandler, isPromise, cleanObserver, isFunction,
-} from '../utils';
 import Single from '../../single';
-import { error, fromPromise } from '../operators';
+import SingleEmitter from '../../single-emitter';
+import error from './error';
+import fromPromise from './fromPromise';
+import {
+  isPromise, cleanObserver, isFunction,
+} from '../utils';
 
 /**
  * @ignore
@@ -11,39 +12,32 @@ import { error, fromPromise } from '../operators';
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
-  const controller = new AbortController();
+  const emitter = new SingleEmitter(onSuccess, onError);
 
-  onSubscribe(controller);
-
-  if (controller.signal.aborted) {
-    return;
-  }
-
-  this.controller = controller;
-  this.onSuccess = onSuccess;
-  this.onError = onError;
-
-  const resolve = onSuccessHandler.bind(this);
-  const reject = onErrorHandler.bind(this);
+  onSubscribe(emitter);
 
   let result;
   try {
     result = this.callable();
   } catch (e) {
-    reject(e);
+    emitter.onError(e);
     return;
   }
 
   if (isPromise(result)) {
     fromPromise(result).subscribeWith({
       onSubscribe(ac) {
-        controller.signal.addEventListener('abort', () => ac.abort());
+        emitter.setCancellable(ac);
       },
-      onSuccess: resolve,
-      onError: reject,
+      onSuccess(x) {
+        emitter.onSuccess(x);
+      },
+      onError(e) {
+        emitter.onError(e);
+      },
     });
   } else {
-    resolve(result);
+    emitter.onSuccess(result);
   }
 }
 /**
