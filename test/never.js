@@ -5,27 +5,22 @@ import Single from '../src/single';
 /**
  *
  */
-describe('Single', () => {
+describe('#never', () => {
   /**
    *
    */
-  describe('#never', () => {
-    /**
-     *
-     */
-    it('should create a Single', () => {
-      const single = Single.never();
-      assert(single instanceof Single);
-    });
-    /**
-     *
-     */
-    it('should not signal.', () => {
-      const single = Single.never();
-      single.subscribe(
-        () => done(false),
-        () => done(false),
-      );
-    });
+  it('should create a Single', () => {
+    const single = Single.never();
+    assert(single instanceof Single);
+  });
+  /**
+   *
+   */
+  it('should not signal.', () => {
+    const single = Single.never();
+    single.subscribe(
+      () => done(false),
+      () => done(false),
+    );
   });
 });
