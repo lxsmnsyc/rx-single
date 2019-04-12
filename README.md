@@ -28,12 +28,14 @@ CDN
 
 * jsDelivr
 ```html
+<script src="https://cdn.jsdelivr.net/npm/rx-cancellable/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/rx-scheduler/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/rx-single/dist/index.min.js"></script>
 ```
 
 * unpkg
 ```html
+<script src="https://unpkg.com/rx-cancellable/dist/index.min.js"></script>
 <script src="https://unpkg.com/rx-scheduler/dist/index.min.js"></script>
 <script src="https://unpkg.com/rx-single/dist/index.min.js"></script>
 ```
@@ -73,6 +75,8 @@ npm run build
 ```
 
 ## Changelogs
+* 0.10.0
+  - Replaced AbortController with [Cancellable](https://lxsmnsyc.github.io/rx-cancellable/).
 * 0.9.0
   - now uses [Schedulers](https://github.com/LXSMNSYC/rx-scheduler)
   - `delay`, `delaySubscription`, `timeout` and `timer` now accepts `Schedulers` (defaults to `Scheduler.current`).
