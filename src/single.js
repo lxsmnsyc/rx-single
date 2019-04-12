@@ -38,14 +38,14 @@
  * @external {PromiseLike} https://promisesaplus.com/
  */
 /**
- * @external {AbortController} https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+ * @external {Cancellable} https://developer.mozilla.org/en-US/docs/Web/API/Cancellable
  */
-import AbortController from 'abort-controller';
+import { LinkedCancellable } from 'rx-cancellable';
 import {
   create, contains, just, error, defer, delay,
   never, map, fromPromise, fromResolvable, fromCallable,
   timer, doAfterSuccess, doAfterTerminate, doFinally,
-  doOnAbort, doOnError, doOnSuccess, doOnEvent,
+  doOnCancel, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
   doOnTerminate, cache, delaySubscription, delayUntil,
@@ -74,8 +74,8 @@ import { isObserver } from './internal/utils';
  * by onError.
  *
  * Like Observable, a running Single can be stopped through
- * the AbortController instance provided to consumers through
- * Observer.onSubscribe(AbortController).
+ * the Cancellable instance provided to consumers through
+ * Observer.onSubscribe(Cancellable).
  *
  * Singles are cold by default, but using a toPromise method,
  * you can achieve a hot-like Single.
@@ -300,16 +300,16 @@ export default class Single {
 
   /**
    * Calls the specified action after this Single signals
-   * onSuccess or onError or gets aborted by the downstream.
+   * onSuccess or onError or gets cancelled by the downstream.
    *
-   * In case of a race between a terminal event and a abort
+   * In case of a race between a terminal event and a cancel
    * call, the provided onFinally action is executed once per
    * subscription.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doFinally.png" class="diagram">
    *
    * @param {!Function} callable
-   * the action function when this Single terminates or gets aborted
+   * the action function when this Single terminates or gets cancelled
    * @returns {Single}
    */
   doFinally(callable) {
@@ -318,18 +318,18 @@ export default class Single {
 
   /**
    * Calls the shared function if a Observer
-   * subscribed to the current Single aborts
-   * the common AbortController it received via
+   * subscribed to the current Single cancels
+   * the common Cancellable it received via
    * onSubscribe.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnDispose.png" class="diagram">
    *
    * @param {!Function} callable
-   * the function called when the subscription is aborted
+   * the function called when the subscription is cancelled
    * @returns {Single}
    */
-  doOnAbort(callable) {
-    return doOnAbort(this, callable);
+  doOnCancel(callable) {
+    return doOnCancel(this, callable);
   }
 
   /**
@@ -362,14 +362,14 @@ export default class Single {
   }
 
   /**
-   * Calls the shared function with the AbortController
+   * Calls the shared function with the Cancellable
    * sent through the onSubscribe for each Observer
    * that subscribes to the current Single.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.doOnSubscribe.png" class="diagram">
    *
-   * @param {!function(x: AbortController)} callable
-   * the function called with the AbortController sent via onSubscribe
+   * @param {!function(x: Cancellable)} callable
+   * the function called with the Cancellable sent via onSubscribe
    * @returns {Single}
    */
   doOnSubscribe(callable) {
@@ -531,7 +531,7 @@ export default class Single {
    * from the upstream directly or according to the emission
    * pattern the custom operator's business logic requires.
    * In addition, such operator can intercept the flow control
-   * calls of abort and signal.aborted that would have traveled
+   * calls of cancel and signal.cancelled that would have traveled
    * upstream and perform additional actions depending on the
    * same business logic requirements.
    *
@@ -735,7 +735,7 @@ export default class Single {
    *
    * The onSubscribe method is called when subscribeWith
    * or subscribe is executed. This method receives an
-   * AbortController instance.
+   * Cancellable instance.
    *
    * @param {!Object} observer
    * @returns {undefined}
@@ -761,30 +761,14 @@ export default class Single {
    * @param {?function(x: Error)} onError
    * the function you have designed to accept any error
    * notification from the Single
-   * @returns {AbortController}
-   * an AbortController reference can request the Single to abort.
+   * @returns {Cancellable}
+   * an Cancellable reference can request the Single to cancel.
    */
   subscribe(onSuccess, onError) {
-    const controller = new AbortController();
-    let once = false;
+    const controller = new LinkedCancellable();
     this.subscribeWith({
       onSubscribe(ac) {
-        ac.signal.addEventListener('abort', () => {
-          if (!once) {
-            once = true;
-            if (!controller.signal.aborted) {
-              controller.abort();
-            }
-          }
-        });
-        controller.signal.addEventListener('abort', () => {
-          if (!once) {
-            once = true;
-            if (!ac.signal.aborted) {
-              ac.abort();
-            }
-          }
-        });
+        controller.link(ac);
       },
       onSuccess,
       onError,
