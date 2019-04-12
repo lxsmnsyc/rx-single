@@ -77,6 +77,7 @@ npm run build
 ## Changelogs
 * 0.10.0
   - Replaced AbortController with [Cancellable](https://lxsmnsyc.github.io/rx-cancellable/).
+  - Renamed `doOnAbort` with `doOnCancel`
 * 0.9.0
   - now uses [Schedulers](https://github.com/LXSMNSYC/rx-scheduler)
   - `delay`, `delaySubscription`, `timeout` and `timer` now accepts `Schedulers` (defaults to `Scheduler.current`).
