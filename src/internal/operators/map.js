@@ -1,11 +1,5 @@
 import Single from '../../single';
-import { cleanObserver, isFunction } from '../utils';
-
-/**
- * @ignore
- */
-const defaultMapper = x => x;
-
+import { cleanObserver, isFunction, isNull } from '../utils';
 /**
  * @ignore
  */
@@ -20,7 +14,7 @@ function subscribeActual(observer) {
       let result;
       try {
         result = mapper(x);
-        if (result == null) {
+        if (isNull(result)) {
           throw new Error('Single.map: mapper function returned a null value.');
         }
       } catch (e) {
@@ -36,13 +30,11 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, mapper) => {
-  let ms = mapper;
   if (!isFunction(mapper)) {
-    ms = defaultMapper;
+    return source;
   }
-
   const single = new Single(subscribeActual);
   single.source = source;
-  single.mapper = ms;
+  single.mapper = mapper;
   return single;
 };
