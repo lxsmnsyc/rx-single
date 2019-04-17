@@ -1,6 +1,6 @@
-import Single from '../../single';
 import error from './error';
 import { isFunction } from '../utils';
+import is from '../is';
 
 /**
  * @ignore
@@ -15,7 +15,7 @@ export default (source, transformer) => {
   try {
     result = transformer(source);
 
-    if (!(result instanceof Single)) {
+    if (!is(result)) {
       throw new Error('Single.compose: transformer returned a non-Single.');
     }
   } catch (e) {
