@@ -23,6 +23,22 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
+  const isNull = x => x == null;
+  /**
+   * @ignore
+   */
+  const exists = x => x != null;
+  /**
+   * @ignore
+   */
+  const isOf = (x, y) => x instanceof y;
+  /**
+   * @ignore
+   */
+  const isArray = x => isOf(x, Array);
+  /**
+   * @ignore
+   */
   const isIterable = obj => isObject(obj) && isFunction(obj[Symbol.iterator]);
   /**
    * @ignore
@@ -36,8 +52,8 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   const isPromise = (obj) => {
-    if (obj == null) return false;
-    if (obj instanceof Promise) return true;
+    if (isNull(obj)) return false;
+    if (isOf(obj, Promise)) return true;
     return (isObject(obj) || isFunction(obj)) && isFunction(obj.then);
   };
   /**
@@ -92,7 +108,7 @@ var Single = (function (rxCancellable, Scheduler) {
     try {
       err = this.supplier();
 
-      if (err == null) {
+      if (isNull(err)) {
         throw new Error('Single.error: Error supplier returned a null value.');
       }
     } catch (e) {
@@ -105,7 +121,7 @@ var Single = (function (rxCancellable, Scheduler) {
    */
   var error = (value) => {
     let report = value;
-    if (!(value instanceof Error || isFunction(value))) {
+    if (!(isOf(value, Error) || isFunction(value))) {
       report = new Error('Single.error received a non-Error value.');
     }
 
@@ -116,6 +132,11 @@ var Single = (function (rxCancellable, Scheduler) {
     single.supplier = report;
     return single;
   };
+
+  /**
+   * @ignore
+   */
+  var is = x => x instanceof Single;
 
   /* eslint-disable no-restricted-syntax */
 
@@ -136,7 +157,7 @@ var Single = (function (rxCancellable, Scheduler) {
         return;
       }
 
-      if (single instanceof Single) {
+      if (is(single)) {
         single.subscribeWith({
           onSubscribe(c) {
             controller.add(c);
@@ -170,20 +191,78 @@ var Single = (function (rxCancellable, Scheduler) {
     return single;
   };
 
-  /**
-   * @ignore
-   */
-  var ambWith = (source, other) => {
-    if (!(other instanceof Single)) {
-      return source;
-    }
-    return amb([source, other]);
-  };
+  /* eslint-disable no-restricted-syntax */
 
   /**
    * @ignore
    */
   function subscribeActual$2(observer) {
+    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
+
+    const { sources } = this;
+    const { length } = sources;
+
+    if (length === 0) {
+      immediateError(observer, new Error('Single.ambArray: sources Array is empty.'));
+    } else {
+      const controller = new rxCancellable.CompositeCancellable();
+
+      onSubscribe(controller);
+
+      for (let i = 0; i < length; i += 1) {
+        const single = sources[i];
+        if (controller.cancelled) {
+          return;
+        }
+        if (is(single)) {
+          single.subscribeWith({
+            onSubscribe(c) {
+              controller.add(c);
+            },
+            // eslint-disable-next-line no-loop-func
+            onSuccess(x) {
+              onSuccess(x);
+              controller.cancel();
+            },
+            onError(x) {
+              onError(x);
+              controller.cancel();
+            },
+          });
+        } else {
+          onError(new Error('Single.ambArray: One of the sources is a non-Single.'));
+          controller.cancel();
+          break;
+        }
+      }
+    }
+  }
+  /**
+   * @ignore
+   */
+  var ambArray = (sources) => {
+    if (!isArray(sources)) {
+      return error(new Error('Single.ambArray: sources is not an Array.'));
+    }
+    const single = new Single(subscribeActual$2);
+    single.sources = sources;
+    return single;
+  };
+
+  /**
+   * @ignore
+   */
+  var ambWith = (source, other) => {
+    if (!(is(other))) {
+      return source;
+    }
+    return ambArray([source, other]);
+  };
+
+  /**
+   * @ignore
+   */
+  function subscribeActual$3(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const {
@@ -237,10 +316,10 @@ var Single = (function (rxCancellable, Scheduler) {
       onSubscribe(controller);
 
       const { value, error } = this;
-      if (value != null) {
+      if (exists(value)) {
         onSuccess(value);
       }
-      if (error != null) {
+      if (exists(error)) {
         onError(error);
       }
       controller.cancel();
@@ -251,7 +330,7 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var cache = (source) => {
-    const single = new Single(subscribeActual$2);
+    const single = new Single(subscribeActual$3);
     single.source = source;
     single.cached = false;
     single.subscribed = false;
@@ -259,10 +338,6 @@ var Single = (function (rxCancellable, Scheduler) {
     return single;
   };
 
-  /**
-   * @ignore
-   */
-  const LINK = new WeakMap();
   /**
    * Abstraction over a SingleObserver that allows associating
    * a resource with it.
@@ -283,8 +358,10 @@ var Single = (function (rxCancellable, Scheduler) {
        * @ignore
        */
       this.error = error;
-
-      LINK.set(this, new rxCancellable.BooleanCancellable());
+      /**
+       * @ignore
+       */
+      this.link = new rxCancellable.BooleanCancellable();
     }
 
     /**
@@ -292,7 +369,7 @@ var Single = (function (rxCancellable, Scheduler) {
      * @returns {boolean}
      */
     get cancelled() {
-      return LINK.get(this).cancelled;
+      return this.link.cancelled;
     }
 
     /**
@@ -300,7 +377,7 @@ var Single = (function (rxCancellable, Scheduler) {
      * @returns {boolean}
      */
     cancel() {
-      return LINK.get(this).cancel();
+      return this.link.cancel();
     }
 
     /**
@@ -311,15 +388,15 @@ var Single = (function (rxCancellable, Scheduler) {
      * Returns true if the cancellable is valid.
      */
     setCancellable(cancellable) {
-      if (cancellable instanceof rxCancellable.Cancellable) {
+      if (isOf(cancellable, rxCancellable.Cancellable)) {
         if (this.cancelled) {
           cancellable.cancel();
         } else if (cancellable.cancelled) {
           this.cancel();
           return true;
         } else {
-          const link = LINK.get(this);
-          LINK.set(this, cancellable);
+          const { link } = this;
+          this.link = cancellable;
           link.cancel();
           return true;
         }
@@ -337,7 +414,7 @@ var Single = (function (rxCancellable, Scheduler) {
         return;
       }
       try {
-        if (typeof value === 'undefined') {
+        if (isNull(value)) {
           this.error(new Error('onSuccess called with a null value.'));
         } else {
           this.success(value);
@@ -354,7 +431,7 @@ var Single = (function (rxCancellable, Scheduler) {
     // eslint-disable-next-line class-methods-use-this, no-unused-vars
     onError(err) {
       let report = err;
-      if (!(err instanceof Error)) {
+      if (!isOf(err, Error)) {
         report = new Error('onError called with a non-Error value.');
       }
       if (this.cancelled) {
@@ -371,7 +448,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$3(observer) {
+  function subscribeActual$4(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const emitter = new SingleEmitter(onSuccess, onError);
@@ -388,10 +465,10 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var create = (subscriber) => {
-    if (typeof subscriber !== 'function') {
+    if (!isFunction(subscriber)) {
       return error(new Error('Single.create: There are no subscribers.'));
     }
-    const single = new Single(subscribeActual$3);
+    const single = new Single(subscribeActual$4);
     single.subscriber = subscriber;
     return single;
   };
@@ -409,7 +486,7 @@ var Single = (function (rxCancellable, Scheduler) {
     try {
       result = transformer(source);
 
-      if (!(result instanceof Single)) {
+      if (!is(result)) {
         throw new Error('Single.compose: transformer returned a non-Single.');
       }
     } catch (e) {
@@ -427,7 +504,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$4(observer) {
+  function subscribeActual$5(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { value, comparer } = this;
@@ -451,7 +528,7 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var contains = (source, value, comparer) => {
-    if (value == null) {
+    if (isNull(value)) {
       return source;
     }
 
@@ -460,7 +537,7 @@ var Single = (function (rxCancellable, Scheduler) {
       cmp = containsComparer;
     }
 
-    const single = new Single(subscribeActual$4);
+    const single = new Single(subscribeActual$5);
     single.source = source;
     single.value = value;
     single.comparer = cmp;
@@ -470,7 +547,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$5(observer) {
+  function subscribeActual$6(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     let result;
@@ -478,14 +555,14 @@ var Single = (function (rxCancellable, Scheduler) {
     let err;
     try {
       result = this.supplier();
-      if (!(result instanceof Single)) {
+      if (!is(result)) {
         throw new Error('Single.defer: supplier returned a non-Single.');
       }
     } catch (e) {
       err = e;
     }
 
-    if (err != null) {
+    if (exists(err)) {
       immediateError(observer, err);
     } else {
       result.subscribeWith({
@@ -499,7 +576,7 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var defer = (supplier) => {
-    const single = new Single(subscribeActual$5);
+    const single = new Single(subscribeActual$6);
     single.supplier = supplier;
     return single;
   };
@@ -507,7 +584,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$6(observer) {
+  function subscribeActual$7(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { amount, scheduler, doDelayError } = this;
@@ -544,10 +621,10 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
     let sched = scheduler;
-    if (!(sched instanceof Scheduler.interface)) {
+    if (!isOf(sched, Scheduler.interface)) {
       sched = Scheduler.current;
     }
-    const single = new Single(subscribeActual$6);
+    const single = new Single(subscribeActual$7);
     single.source = source;
     single.amount = amount;
     single.scheduler = sched;
@@ -558,7 +635,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$7(observer) {
+  function subscribeActual$8(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { amount, scheduler, source } = this;
@@ -587,10 +664,10 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
     let sched = scheduler;
-    if (!(sched instanceof Scheduler.interface)) {
+    if (!isOf(sched, Scheduler.interface)) {
       sched = Scheduler.current;
     }
-    const single = new Single(subscribeActual$7);
+    const single = new Single(subscribeActual$8);
     single.source = source;
     single.amount = amount;
     single.scheduler = sched;
@@ -600,7 +677,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$8(observer) {
+  function subscribeActual$9(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, other } = this;
@@ -630,10 +707,10 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var delayUntil = (source, other) => {
-    if (!(other instanceof Single)) {
+    if (!is(other)) {
       return source;
     }
-    const single = new Single(subscribeActual$8);
+    const single = new Single(subscribeActual$9);
     single.source = source;
     single.other = other;
     return single;
@@ -642,7 +719,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$9(observer) {
+  function subscribeActual$a(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -665,7 +742,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$9);
+    const single = new Single(subscribeActual$a);
     single.source = source;
     single.callable = callable;
     return single;
@@ -674,7 +751,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$a(observer) {
+  function subscribeActual$b(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -700,7 +777,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$a);
+    const single = new Single(subscribeActual$b);
     single.source = source;
     single.callable = callable;
     return single;
@@ -709,7 +786,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$b(observer) {
+  function subscribeActual$c(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -750,7 +827,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$b);
+    const single = new Single(subscribeActual$c);
     single.source = source;
     single.callable = callable;
     return single;
@@ -759,7 +836,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$c(observer) {
+  function subscribeActual$d(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -782,7 +859,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$c);
+    const single = new Single(subscribeActual$d);
     single.source = source;
     single.callable = callable;
     return single;
@@ -791,7 +868,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$d(observer) {
+  function subscribeActual$e(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -814,7 +891,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$d);
+    const single = new Single(subscribeActual$e);
     single.source = source;
     single.callable = callable;
     return single;
@@ -823,7 +900,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$e(observer) {
+  function subscribeActual$f(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -849,7 +926,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$e);
+    const single = new Single(subscribeActual$f);
     single.source = source;
     single.callable = callable;
     return single;
@@ -858,7 +935,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$f(observer) {
+  function subscribeActual$g(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -881,7 +958,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$f);
+    const single = new Single(subscribeActual$g);
     single.source = source;
     single.callable = callable;
     return single;
@@ -890,7 +967,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$g(observer) {
+  function subscribeActual$h(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -912,7 +989,7 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isFunction(callable)) {
       return source;
     }
-    const single = new Single(subscribeActual$g);
+    const single = new Single(subscribeActual$h);
     single.source = source;
     single.callable = callable;
     return single;
@@ -921,7 +998,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$h(observer) {
+  function subscribeActual$i(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, callable } = this;
@@ -947,7 +1024,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$h);
+    const single = new Single(subscribeActual$i);
     single.source = source;
     single.callable = callable;
     return single;
@@ -956,7 +1033,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$i(observer) {
+  function subscribeActual$j(observer) {
     const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
     const controller = new rxCancellable.LinkedCancellable();
@@ -975,7 +1052,7 @@ var Single = (function (rxCancellable, Scheduler) {
         try {
           result = mapper(x);
 
-          if (!(result instanceof Single)) {
+          if (!is(result)) {
             throw new Error('Single.flatMap: mapper returned a non-Single');
           }
         } catch (e) {
@@ -1003,7 +1080,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$i);
+    const single = new Single(subscribeActual$j);
     single.source = source;
     single.mapper = mapper;
     return single;
@@ -1012,7 +1089,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$j(observer) {
+  function subscribeActual$k(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const emitter = new SingleEmitter(onSuccess, onError);
@@ -1031,7 +1108,7 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isPromise(promise)) {
       return error(new Error('Single.fromPromise: expects a Promise-like value.'));
     }
-    const single = new Single(subscribeActual$j);
+    const single = new Single(subscribeActual$k);
     single.promise = promise;
     return single;
   };
@@ -1039,7 +1116,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$k(observer) {
+  function subscribeActual$l(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const emitter = new SingleEmitter(onSuccess, onError);
@@ -1077,12 +1154,12 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isFunction(callable)) {
       return error(new Error('Single.fromCallable: callable received is not a function.'));
     }
-    const single = new Single(subscribeActual$k);
+    const single = new Single(subscribeActual$l);
     single.callable = callable;
     return single;
   };
 
-  function subscribeActual$l(observer) {
+  function subscribeActual$m(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const emitter = new SingleEmitter(onSuccess, onError);
@@ -1101,7 +1178,7 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isFunction(subscriber)) {
       return error(new Error('Single.fromResolvable: expects a function.'));
     }
-    const single = new Single(subscribeActual$l);
+    const single = new Single(subscribeActual$m);
     single.subscriber = subscriber;
     return single;
   };
@@ -1109,17 +1186,17 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$m(observer) {
+  function subscribeActual$n(observer) {
     immediateSuccess(observer, this.value);
   }
   /**
    * @ignore
    */
   var just = (value) => {
-    if (value == null) {
+    if (isNull(value)) {
       return error(new Error('Single.just: received a null value.'));
     }
-    const single = new Single(subscribeActual$m);
+    const single = new Single(subscribeActual$n);
     single.value = value;
     return single;
   };
@@ -1127,7 +1204,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$n(observer) {
+  function subscribeActual$o(observer) {
     let result;
 
     try {
@@ -1152,7 +1229,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$n);
+    const single = new Single(subscribeActual$o);
     single.source = source;
     single.operator = operator;
     return single;
@@ -1161,12 +1238,7 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  const defaultMapper = x => x;
-
-  /**
-   * @ignore
-   */
-  function subscribeActual$o(observer) {
+  function subscribeActual$p(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { mapper } = this;
@@ -1177,7 +1249,7 @@ var Single = (function (rxCancellable, Scheduler) {
         let result;
         try {
           result = mapper(x);
-          if (result == null) {
+          if (isNull(result)) {
             throw new Error('Single.map: mapper function returned a null value.');
           }
         } catch (e) {
@@ -1193,21 +1265,19 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var map = (source, mapper) => {
-    let ms = mapper;
     if (!isFunction(mapper)) {
-      ms = defaultMapper;
+      return source;
     }
-
-    const single = new Single(subscribeActual$o);
+    const single = new Single(subscribeActual$p);
     single.source = source;
-    single.mapper = ms;
+    single.mapper = mapper;
     return single;
   };
 
   /**
    * @ignore
    */
-  function subscribeActual$p(observer) {
+  function subscribeActual$q(observer) {
     const { onSubscribe, onError, onSuccess } = cleanObserver(observer);
 
     const controller = new rxCancellable.LinkedCancellable();
@@ -1221,7 +1291,7 @@ var Single = (function (rxCancellable, Scheduler) {
       onSuccess(x) {
         controller.unlink();
         let result = x;
-        if (!(x instanceof Single)) {
+        if (!is(x)) {
           result = error(new Error('Single.merge: source emitted a non-Single value.'));
         }
         result.subscribeWith({
@@ -1240,16 +1310,16 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var merge = (source) => {
-    if (!(source instanceof Single)) {
+    if (!is(source)) {
       return error(new Error('Single.merge: source is not a Single.'));
     }
 
-    const single = new Single(subscribeActual$p);
+    const single = new Single(subscribeActual$q);
     single.source = source;
     return single;
   };
 
-  function subscribeActual$q(observer) {
+  function subscribeActual$r(observer) {
     const { onSubscribe, onSuccess, onError } = cleanObserver(observer);
 
     const { source, scheduler } = this;
@@ -1279,16 +1349,16 @@ var Single = (function (rxCancellable, Scheduler) {
    */
   var observeOn = (source, scheduler) => {
     let sched = scheduler;
-    if (!(sched instanceof Scheduler.interface)) {
+    if (!isOf(sched, Scheduler.interface)) {
       sched = Scheduler.current;
     }
-    const single = new Single(subscribeActual$q);
+    const single = new Single(subscribeActual$r);
     single.source = source;
     single.scheduler = sched;
     return single;
   };
 
-  function subscribeActual$r(observer) {
+  function subscribeActual$s(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, resumeIfError } = this;
@@ -1309,7 +1379,7 @@ var Single = (function (rxCancellable, Scheduler) {
         if (isFunction(resumeIfError)) {
           try {
             result = resumeIfError(x);
-            if (!(result instanceof Single)) {
+            if (!is(result)) {
               throw new Error('Single.onErrorResumeNext: returned an non-Single.');
             }
           } catch (e) {
@@ -1335,17 +1405,17 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var onErrorResumeNext = (source, resumeIfError) => {
-    if (!(isFunction(resumeIfError) || resumeIfError instanceof Single)) {
+    if (!(isFunction(resumeIfError) || is(resumeIfError))) {
       return source;
     }
 
-    const single = new Single(subscribeActual$r);
+    const single = new Single(subscribeActual$s);
     single.source = source;
     single.resumeIfError = resumeIfError;
     return single;
   };
 
-  function subscribeActual$s(observer) {
+  function subscribeActual$t(observer) {
     const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
 
     const { source, item } = this;
@@ -1359,7 +1429,7 @@ var Single = (function (rxCancellable, Scheduler) {
         try {
           result = item(x);
 
-          if (result == null) {
+          if (isNull(result)) {
             throw new Error(new Error('Single.onErrorReturn: returned a null value.'));
           }
         } catch (e) {
@@ -1378,13 +1448,13 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
 
-    const single = new Single(subscribeActual$s);
+    const single = new Single(subscribeActual$t);
     single.source = source;
     single.item = item;
     return single;
   };
 
-  function subscribeActual$t(observer) {
+  function subscribeActual$u(observer) {
     const { onSuccess, onSubscribe } = cleanObserver(observer);
 
     const { source, item } = this;
@@ -1401,11 +1471,11 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var onErrorReturnItem = (source, item) => {
-    if (item == null) {
+    if (isNull(item)) {
       return source;
     }
 
-    const single = new Single(subscribeActual$t);
+    const single = new Single(subscribeActual$u);
     single.source = source;
     single.item = item;
     return single;
@@ -1415,19 +1485,13 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
-  function subscribeActual$u(observer) {
-    observer.onSubscribe(rxCancellable.UNCANCELLED);
-  }
-  /**
-   * @ignore
-   */
   let INSTANCE;
   /**
    * @ignore
    */
   var never = () => {
-    if (typeof INSTANCE === 'undefined') {
-      INSTANCE = new Single(subscribeActual$u);
+    if (isNull(INSTANCE)) {
+      INSTANCE = new Single(o => o.onSubscribe(rxCancellable.UNCANCELLED));
     }
     return INSTANCE;
   };
@@ -1509,7 +1573,7 @@ var Single = (function (rxCancellable, Scheduler) {
    */
   var subscribeOn = (source, scheduler) => {
     let sched = scheduler;
-    if (!(sched instanceof Scheduler.interface)) {
+    if (!isOf(sched, Scheduler.interface)) {
       sched = Scheduler.current;
     }
     const single = new Single(subscribeActual$w);
@@ -1563,7 +1627,7 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   const takeUntil = (source, other) => {
-    if (!(other instanceof Single)) {
+    if (!is(other)) {
       return source;
     }
 
@@ -1589,7 +1653,7 @@ var Single = (function (rxCancellable, Scheduler) {
     }
 
     let sched = scheduler;
-    if (!(sched instanceof Scheduler.interface)) {
+    if (!isOf(sched, Scheduler.interface)) {
       sched = Scheduler.current;
     }
     const single = new Single(subscribeActual$y);
@@ -1636,7 +1700,7 @@ var Single = (function (rxCancellable, Scheduler) {
       return source;
     }
     let sched = scheduler;
-    if (!(sched instanceof Scheduler.interface)) {
+    if (!isOf(sched, Scheduler.interface)) {
       sched = Scheduler.current;
     }
     const single = new Single(subscribeActual$z);
@@ -1664,10 +1728,11 @@ var Single = (function (rxCancellable, Scheduler) {
     const size = sources.length;
 
     if (size === 0) {
-      onError(new Error('Single.zip: empty iterable'));
+      onError(new Error('Single.zipArray: source array is empty'));
       controller.cancel();
       return;
     }
+
     let pending = size;
 
     for (let i = 0; i < size; i += 1) {
@@ -1676,7 +1741,7 @@ var Single = (function (rxCancellable, Scheduler) {
       }
       const single = sources[i];
 
-      if (single instanceof Single) {
+      if (is(single)) {
         single.subscribeWith({
           onSubscribe(ac) {
             controller.add(ac);
@@ -1689,8 +1754,8 @@ var Single = (function (rxCancellable, Scheduler) {
               let r;
               try {
                 r = zipper(result);
-                if (r == null) {
-                  throw new Error('Single.zip: zipper function returned a null value.');
+                if (isNull(r)) {
+                  throw new Error('Single.zipArray: zipper function returned a null value.');
                 }
               } catch (e) {
                 onError(e);
@@ -1706,22 +1771,19 @@ var Single = (function (rxCancellable, Scheduler) {
             controller.cancel();
           },
         });
-      } else if (single != null) {
-        result[i] = single;
-        pending -= 1;
       } else {
-        onError(new Error('Single.zip: One of the sources is undefined.'));
+        onError(new Error('Single.zipArray: One of the sources is non-Single.'));
         controller.cancel();
-        break;
+        return;
       }
     }
   }
   /**
    * @ignore
    */
-  var zip = (sources, zipper) => {
-    if (!isIterable(sources)) {
-      return error(new Error('Single.zip: sources is not Iterable.'));
+  var zipArray = (sources, zipper) => {
+    if (!isArray(sources)) {
+      return error(new Error('Single.zipArray: sources is a non-Array.'));
     }
     let fn = zipper;
     if (!isFunction(zipper)) {
@@ -1737,10 +1799,10 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var zipWith = (source, other, zipper) => {
-    if (!(other instanceof Single)) {
+    if (!is(other)) {
       return source;
     }
-    return zip([source, other], zipper);
+    return zipArray([source, other], zipper);
   };
 
   /* eslint-disable import/no-cycle */
@@ -1833,8 +1895,8 @@ var Single = (function (rxCancellable, Scheduler) {
     }
 
     /**
-     * Runs multiple SingleSources and signals the events of
-     * the first one that signals (disposing the rest).
+     * Runs multiple Singles and signals the events of
+     * the first one that signals (cancelling the rest).
      *
      * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.amb.png" class="diagram">
      *
@@ -1846,6 +1908,21 @@ var Single = (function (rxCancellable, Scheduler) {
      */
     static amb(sources) {
       return amb(sources);
+    }
+
+    /**
+     * Runs multiple Singles and signals the events of
+     * the first one that signals (cancelling the rest).
+     *
+     * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.ambArray.png" class="diagram">
+     *
+     * @param {!Array} sources
+     * the array of sources. A subscription to each source
+     * will occur in the same order as in this array.
+     * @returns {Single}
+     */
+    static ambArray(sources) {
+      return ambArray(sources);
     }
 
     /**
@@ -1971,7 +2048,7 @@ var Single = (function (rxCancellable, Scheduler) {
 
     /**
      * Delays the actual subscription to the current Single
-     * until the given other SingleSource signals success.
+     * until the given other Single signals success.
      *
      * If the delaying source signals an error, that error is
      * re-emitted and no subscription to the current Single
@@ -2158,7 +2235,7 @@ var Single = (function (rxCancellable, Scheduler) {
      *
      * @param {!function(x: any):Single} mapper
      * a function that, when applied to the item emitted by the
-     * source Single, returns a SingleSource
+     * source Single, returns a Single
      * @returns {Single}
      * the Single returned from mapper when applied to the item
      * emitted by the source Single
@@ -2549,28 +2626,27 @@ var Single = (function (rxCancellable, Scheduler) {
     }
 
     /**
-     * Waits until all Single sources provided via an
-     * iterable signal a success value and calls a zipper
+     * Waits until all Single sources provided via
+     * an array signal a success value and calls a zipper
      * function with an array of these values to return
      * a result to be emitted to downstream.
      *
-     * If the Iterable of SingleSources is empty a NoSuchElementException
-     * error is signalled after subscription.
+     * If the array of Single is empty an error is
+     * signalled immediately.
      *
      * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.zip.png" class="diagram">
      *
-     * @param {!Iterable} sources
-     * the Iterable sequence of SingleSource instances.
-     * An empty sequence will result in an onError signal
-     * of NoSuchElementException.
+     * @param {!Array} sources
+     * the array of Single instances. An empty sequence
+     * will result in an onError signal.
      * @param {?Function} zipper
      * the function that receives an array with values
      * from each Single and should return a value to be
      * emitted to downstream
      * @returns {Single}
      */
-    static zip(sources, zipper) {
-      return zip(sources, zipper);
+    static zipArray(sources, zipper) {
+      return zipArray(sources, zipper);
     }
 
     /**
