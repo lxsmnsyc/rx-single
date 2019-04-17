@@ -3,7 +3,7 @@ import {
 } from '../utils';
 import Single from '../../single';
 import error from './error';
-import SingleEmitter from '../../single-emitter';
+import SingleEmitter from '../../emitter';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
