@@ -3,7 +3,7 @@ import {
   isPromise, cleanObserver,
 } from '../utils';
 import error from './error';
-import SingleEmitter from '../../single-emitter';
+import SingleEmitter from '../../emitter';
 /**
  * @ignore
  */
