@@ -3,6 +3,7 @@ import { LinkedCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import error from './error';
 import { cleanObserver } from '../utils';
+import is from '../is';
 
 /**
  * @ignore
@@ -21,7 +22,7 @@ function subscribeActual(observer) {
     onSuccess(x) {
       controller.unlink();
       let result = x;
-      if (!(x instanceof Single)) {
+      if (!is(x)) {
         result = error(new Error('Single.merge: source emitted a non-Single value.'));
       }
       result.subscribeWith({
@@ -40,7 +41,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source) => {
-  if (!(source instanceof Single)) {
+  if (!is(source)) {
     return error(new Error('Single.merge: source is not a Single.'));
   }
 
