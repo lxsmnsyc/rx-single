@@ -3,6 +3,7 @@ import { CompositeCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { isIterable, cleanObserver } from '../utils';
 import error from './error';
+import is from '../is';
 
 /**
  * @ignore
@@ -21,7 +22,7 @@ function subscribeActual(observer) {
       return;
     }
 
-    if (single instanceof Single) {
+    if (is(single)) {
       single.subscribeWith({
         onSubscribe(c) {
           controller.add(c);
