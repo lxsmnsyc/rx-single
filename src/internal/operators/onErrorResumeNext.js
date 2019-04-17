@@ -2,6 +2,7 @@
 import { LinkedCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { cleanObserver, isFunction } from '../utils';
+import is from '../is';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
@@ -24,7 +25,7 @@ function subscribeActual(observer) {
       if (isFunction(resumeIfError)) {
         try {
           result = resumeIfError(x);
-          if (!(result instanceof Single)) {
+          if (!is(result)) {
             throw new Error('Single.onErrorResumeNext: returned an non-Single.');
           }
         } catch (e) {
@@ -50,7 +51,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, resumeIfError) => {
-  if (!(isFunction(resumeIfError) || resumeIfError instanceof Single)) {
+  if (!(isFunction(resumeIfError) || is(resumeIfError))) {
     return source;
   }
 
