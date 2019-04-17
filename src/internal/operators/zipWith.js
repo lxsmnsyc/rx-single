@@ -1,12 +1,11 @@
-import Single from '../../single';
-import zip from './zip';
-
+import is from '../is';
+import zipArray from './zipArray';
 /**
  * @ignore
  */
 export default (source, other, zipper) => {
-  if (!(other instanceof Single)) {
+  if (!is(other)) {
     return source;
   }
-  return zip([source, other], zipper);
+  return zipArray([source, other], zipper);
 };
