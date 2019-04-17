@@ -75,6 +75,10 @@ npm run build
 ```
 
 ## Changelogs
+* 0.11.0
+  - Massive performance boost
+  - Renamed `zip` to `zipArray`
+  - added `ambArray`
 * 0.10.0
   - Replaced AbortController with [Cancellable](https://lxsmnsyc.github.io/rx-cancellable/).
   - Renamed `doOnAbort` with `doOnCancel`
