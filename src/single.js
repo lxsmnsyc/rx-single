@@ -47,9 +47,9 @@ import {
   timer, doAfterSuccess, doAfterTerminate, doFinally,
   doOnCancel, doOnError, doOnSuccess, doOnEvent,
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
-  timeout, zipWith, zip, doOnSubscribe, ambWith, amb,
+  timeout, zipWith, doOnSubscribe, ambWith, amb,
   doOnTerminate, cache, delaySubscription, delayUntil,
-  merge, flatMap, retry, compose, lift, takeUntil, observeOn, subscribeOn,
+  merge, flatMap, retry, compose, lift, takeUntil, observeOn, subscribeOn, ambArray, zipArray,
 } from './internal/operators';
 import { isObserver } from './internal/utils';
 
@@ -113,8 +113,8 @@ export default class Single {
   }
 
   /**
-   * Runs multiple SingleSources and signals the events of
-   * the first one that signals (disposing the rest).
+   * Runs multiple Singles and signals the events of
+   * the first one that signals (cancelling the rest).
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.amb.png" class="diagram">
    *
@@ -126,6 +126,21 @@ export default class Single {
    */
   static amb(sources) {
     return amb(sources);
+  }
+
+  /**
+   * Runs multiple Singles and signals the events of
+   * the first one that signals (cancelling the rest).
+   *
+   * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.ambArray.png" class="diagram">
+   *
+   * @param {!Array} sources
+   * the array of sources. A subscription to each source
+   * will occur in the same order as in this array.
+   * @returns {Single}
+   */
+  static ambArray(sources) {
+    return ambArray(sources);
   }
 
   /**
@@ -251,7 +266,7 @@ export default class Single {
 
   /**
    * Delays the actual subscription to the current Single
-   * until the given other SingleSource signals success.
+   * until the given other Single signals success.
    *
    * If the delaying source signals an error, that error is
    * re-emitted and no subscription to the current Single
@@ -438,7 +453,7 @@ export default class Single {
    *
    * @param {!function(x: any):Single} mapper
    * a function that, when applied to the item emitted by the
-   * source Single, returns a SingleSource
+   * source Single, returns a Single
    * @returns {Single}
    * the Single returned from mapper when applied to the item
    * emitted by the source Single
@@ -829,28 +844,27 @@ export default class Single {
   }
 
   /**
-   * Waits until all Single sources provided via an
-   * iterable signal a success value and calls a zipper
+   * Waits until all Single sources provided via
+   * an array signal a success value and calls a zipper
    * function with an array of these values to return
    * a result to be emitted to downstream.
    *
-   * If the Iterable of SingleSources is empty a NoSuchElementException
-   * error is signalled after subscription.
+   * If the array of Single is empty an error is
+   * signalled immediately.
    *
    * <img src="https://raw.githubusercontent.com/LXSMNSYC/rx-single/master/assets/images/Single.zip.png" class="diagram">
    *
-   * @param {!Iterable} sources
-   * the Iterable sequence of SingleSource instances.
-   * An empty sequence will result in an onError signal
-   * of NoSuchElementException.
+   * @param {!Array} sources
+   * the array of Single instances. An empty sequence
+   * will result in an onError signal.
    * @param {?Function} zipper
    * the function that receives an array with values
    * from each Single and should return a value to be
    * emitted to downstream
    * @returns {Single}
    */
-  static zip(sources, zipper) {
-    return zip(sources, zipper);
+  static zipArray(sources, zipper) {
+    return zipArray(sources, zipper);
   }
 
   /**
