@@ -1,5 +1,5 @@
 import Single from '../../single';
-import SingleEmitter from '../../single-emitter';
+import SingleEmitter from '../../emitter';
 import error from './error';
 import fromPromise from './fromPromise';
 import {
