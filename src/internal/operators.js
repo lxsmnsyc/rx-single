@@ -3,6 +3,7 @@
  * @ignore
  */
 export { default as amb } from './operators/amb';
+export { default as ambArray } from './operators/ambArray';
 export { default as ambWith } from './operators/ambWith';
 export { default as cache } from './operators/cache';
 export { default as create } from './operators/create';
@@ -40,5 +41,5 @@ export { default as subscribeOn } from './operators/subscribeOn';
 export { default as takeUntil } from './operators/takeUntil';
 export { default as timer } from './operators/timer';
 export { default as timeout } from './operators/timeout';
-export { default as zip } from './operators/zip';
+export { default as zipArray } from './operators/zipArray';
 export { default as zipWith } from './operators/zipWith';
