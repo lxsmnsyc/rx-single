@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { cleanObserver, isFunction } from '../utils';
+import { cleanObserver, isFunction, isNull } from '../utils';
 
 /**
  * @ignore
@@ -33,7 +33,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (source, value, comparer) => {
-  if (value == null) {
+  if (isNull(value)) {
     return source;
   }
 
