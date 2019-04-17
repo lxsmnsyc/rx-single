@@ -1,7 +1,7 @@
-import { cleanObserver } from '../utils';
+import { cleanObserver, isFunction } from '../utils';
 import Single from '../../single';
 import error from './error';
-import SingleEmitter from '../../single-emitter';
+import SingleEmitter from '../../emitter';
 
 /**
  * @ignore
@@ -23,7 +23,7 @@ function subscribeActual(observer) {
  * @ignore
  */
 export default (subscriber) => {
-  if (typeof subscriber !== 'function') {
+  if (!isFunction(subscriber)) {
     return error(new Error('Single.create: There are no subscribers.'));
   }
   const single = new Single(subscribeActual);
