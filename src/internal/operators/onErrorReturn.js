@@ -1,5 +1,5 @@
 import Single from '../../single';
-import { cleanObserver, isFunction } from '../utils';
+import { cleanObserver, isFunction, isNull } from '../utils';
 
 function subscribeActual(observer) {
   const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
@@ -15,7 +15,7 @@ function subscribeActual(observer) {
       try {
         result = item(x);
 
-        if (result == null) {
+        if (isNull(result)) {
           throw new Error(new Error('Single.onErrorReturn: returned a null value.'));
         }
       } catch (e) {
