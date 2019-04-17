@@ -1,6 +1,7 @@
 import { LinkedCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import { cleanObserver, isFunction } from '../utils';
+import is from '../is';
 
 /**
  * @ignore
@@ -24,7 +25,7 @@ function subscribeActual(observer) {
       try {
         result = mapper(x);
 
-        if (!(result instanceof Single)) {
+        if (!is(result)) {
           throw new Error('Single.flatMap: mapper returned a non-Single');
         }
       } catch (e) {
