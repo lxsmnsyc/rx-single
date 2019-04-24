@@ -15,7 +15,7 @@ function subscribeActual(observer) {
 
   const { source, bipredicate } = this;
 
-  let retries = 0;
+  let retries = -1;
 
   const sub = () => {
     retries += 1;
