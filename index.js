@@ -1789,7 +1789,7 @@ var zip = (sources, zipper) => {
     if (is(source)) {
       singles.push(source);
     } else {
-      return error(new Error('Observable.zip: one of the sources is not a Single.'));
+      return error(new Error('Single.zip: one of the sources is not a Single.'));
     }
   }
   return zipArray(singles, zipper);
