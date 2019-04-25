@@ -1700,62 +1700,58 @@ var Single = (function (rxCancellable, Scheduler) {
 
     const result = [];
 
-    const controller = new rxCancellable.CompositeCancellable();
-
-    onSubscribe(controller);
-
     const { sources, zipper } = this;
 
     const size = sources.length;
 
     if (size === 0) {
-      onError(new Error('Single.zipArray: source array is empty'));
-      controller.cancel();
-      return;
-    }
+      immediateError(observer, new Error('Single.zipArray: source array is empty'));
+    } else {
+      const controller = new rxCancellable.CompositeCancellable();
 
-    let pending = size;
+      onSubscribe(controller); let pending = size;
 
-    for (let i = 0; i < size; i += 1) {
-      if (controller.cancelled) {
-        return;
-      }
-      const single = sources[i];
+      for (let i = 0; i < size; i += 1) {
+        if (controller.cancelled) {
+          return;
+        }
+        const single = sources[i];
 
-      if (is(single)) {
-        single.subscribeWith({
-          onSubscribe(ac) {
-            controller.add(ac);
-          },
-          // eslint-disable-next-line no-loop-func
-          onSuccess(x) {
-            result[i] = x;
-            pending -= 1;
-            if (pending === 0) {
-              let r;
-              try {
-                r = zipper(result);
-                if (isNull(r)) {
-                  throw new Error('Single.zipArray: zipper function returned a null value.');
+        if (is(single)) {
+          single.subscribeWith({
+            onSubscribe(ac) {
+              controller.add(ac);
+            },
+            // eslint-disable-next-line no-loop-func
+            onSuccess(x) {
+              result[i] = x;
+              pending -= 1;
+              if (pending === 0) {
+                let r;
+                try {
+                  r = zipper(result);
+                  if (isNull(r)) {
+                    throw new Error('Single.zipArray: zipper function returned a null value.');
+                  }
+                } catch (e) {
+                  onError(e);
+                  controller.cancel();
+                  return;
                 }
-              } catch (e) {
-                onError(e);
+                onSuccess(r);
                 controller.cancel();
-                return;
               }
-              onSuccess(r);
+            },
+            onError(x) {
+              onError(x);
               controller.cancel();
-            }
-          },
-          onError(x) {
-            onError(x);
-            controller.cancel();
-          },
-        });
-      } else {
-        onError(new Error('Single.zipArray: One of the sources is non-Single.'));
-        controller.cancel();
-        return;
+            },
+          });
+        } else {
+          onError(new Error('Single.zipArray: One of the sources is non-Single.'));
+          controller.cancel();
+          return;
+        }
       }
     }
   }
@@ -1774,6 +1770,27 @@ var Single = (function (rxCancellable, Scheduler) {
     single.sources = sources;
     single.zipper = fn;
     return single;
+  };
+
+  /* eslint-disable no-restricted-syntax */
+  /**
+   * @ignore
+   */
+  var zip = (sources, zipper) => {
+    if (!isIterable(sources)) {
+      return error(new Error('Single.zip: sources is a non-Iterable.'));
+    }
+
+    const singles = [];
+
+    for (const source of sources) {
+      if (is(source)) {
+        singles.push(source);
+      } else {
+        return error(new Error('Observable.zip: one of the sources is not a Single.'));
+      }
+    }
+    return zipArray(singles, zipper);
   };
 
   /**
@@ -2604,6 +2621,23 @@ var Single = (function (rxCancellable, Scheduler) {
      */
     timeout(amount, scheduler) {
       return timeout(this, amount, scheduler);
+    }
+
+    /**
+     * Waits until all Single sources provided by the Iterable sequence signal a
+     * success value and calls a zipper function with an array of these values to
+     * return a result to be emitted to downstream.
+     * @param {!Iterable} sources
+     * the Iterable sequence of SingleSource instances. An empty sequence
+     * will result in an onError signal.
+     * @param {?Function} zipper
+     * the function that receives an array with values
+     * from each Single and should return a value to be
+     * emitted to downstream
+     * @returns {Single}
+     */
+    static zip(sources, zipper) {
+      return zip(sources, zipper);
     }
 
     /**
