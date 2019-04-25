@@ -1048,7 +1048,6 @@ var Single = (function (rxCancellable, Scheduler) {
         controller.link(ac);
       },
       onSuccess(x) {
-        controller.unlink();
         let result;
         try {
           result = mapper(x);
@@ -1058,9 +1057,9 @@ var Single = (function (rxCancellable, Scheduler) {
           }
         } catch (e) {
           onError(e);
-          controller.cancel();
           return;
         }
+        controller.unlink();
         result.subscribeWith({
           onSubscribe(ac) {
             controller.link(ac);
@@ -1370,7 +1369,6 @@ var Single = (function (rxCancellable, Scheduler) {
       },
       onSuccess,
       onError(x) {
-        controller.unlink();
         let result;
 
         if (isFunction(resumeIfError)) {
@@ -1381,13 +1379,13 @@ var Single = (function (rxCancellable, Scheduler) {
             }
           } catch (e) {
             onError(new Error([x, e]));
-            controller.cancel();
             return;
           }
         } else {
           result = resumeIfError;
         }
 
+        controller.unlink();
         result.subscribeWith({
           onSubscribe(ac) {
             controller.link(ac);
@@ -1523,7 +1521,6 @@ var Single = (function (rxCancellable, Scheduler) {
               sub();
             } else {
               onError(x);
-              controller.cancel();
             }
           } else {
             sub();
