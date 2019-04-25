@@ -1,7 +1,6 @@
 import { LinkedCancellable } from 'rx-cancellable';
-import Scheduler from 'rx-scheduler';
 import Single from '../../single';
-import { cleanObserver, isNumber, isOf } from '../utils';
+import { cleanObserver, isNumber, defaultScheduler } from '../utils';
 
 /**
  * @ignore
@@ -42,14 +41,10 @@ export default (source, amount, scheduler, doDelayError) => {
   if (!isNumber(amount)) {
     return source;
   }
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual);
   single.source = source;
   single.amount = amount;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   single.doDelayError = doDelayError;
   return single;
 };
