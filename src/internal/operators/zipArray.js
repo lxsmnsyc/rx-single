@@ -21,7 +21,7 @@ function subscribeActual(observer) {
   const size = sources.length;
 
   if (size === 0) {
-    immediateError(new Error('Single.zipArray: source array is empty'));
+    immediateError(observer, new Error('Single.zipArray: source array is empty'));
   } else {
     const controller = new CompositeCancellable();
 
