@@ -2,7 +2,7 @@
 import { CompositeCancellable } from 'rx-cancellable';
 import Single from '../../single';
 import {
-  cleanObserver, isFunction, isArray, isNull,
+  cleanObserver, isFunction, isArray, isNull, immediateError,
 } from '../utils';
 import error from './error';
 import is from '../is';
@@ -16,62 +16,58 @@ function subscribeActual(observer) {
 
   const result = [];
 
-  const controller = new CompositeCancellable();
-
-  onSubscribe(controller);
-
   const { sources, zipper } = this;
 
   const size = sources.length;
 
   if (size === 0) {
-    onError(new Error('Single.zipArray: source array is empty'));
-    controller.cancel();
-    return;
-  }
+    immediateError(new Error('Single.zipArray: source array is empty'));
+  } else {
+    const controller = new CompositeCancellable();
 
-  let pending = size;
+    onSubscribe(controller); let pending = size;
 
-  for (let i = 0; i < size; i += 1) {
-    if (controller.cancelled) {
-      return;
-    }
-    const single = sources[i];
+    for (let i = 0; i < size; i += 1) {
+      if (controller.cancelled) {
+        return;
+      }
+      const single = sources[i];
 
-    if (is(single)) {
-      single.subscribeWith({
-        onSubscribe(ac) {
-          controller.add(ac);
-        },
-        // eslint-disable-next-line no-loop-func
-        onSuccess(x) {
-          result[i] = x;
-          pending -= 1;
-          if (pending === 0) {
-            let r;
-            try {
-              r = zipper(result);
-              if (isNull(r)) {
-                throw new Error('Single.zipArray: zipper function returned a null value.');
+      if (is(single)) {
+        single.subscribeWith({
+          onSubscribe(ac) {
+            controller.add(ac);
+          },
+          // eslint-disable-next-line no-loop-func
+          onSuccess(x) {
+            result[i] = x;
+            pending -= 1;
+            if (pending === 0) {
+              let r;
+              try {
+                r = zipper(result);
+                if (isNull(r)) {
+                  throw new Error('Single.zipArray: zipper function returned a null value.');
+                }
+              } catch (e) {
+                onError(e);
+                controller.cancel();
+                return;
               }
-            } catch (e) {
-              onError(e);
+              onSuccess(r);
               controller.cancel();
-              return;
             }
-            onSuccess(r);
+          },
+          onError(x) {
+            onError(x);
             controller.cancel();
-          }
-        },
-        onError(x) {
-          onError(x);
-          controller.cancel();
-        },
-      });
-    } else {
-      onError(new Error('Single.zipArray: One of the sources is non-Single.'));
-      controller.cancel();
-      return;
+          },
+        });
+      } else {
+        onError(new Error('Single.zipArray: One of the sources is non-Single.'));
+        controller.cancel();
+        return;
+      }
     }
   }
 }
