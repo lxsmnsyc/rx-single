@@ -102,6 +102,15 @@ var Single = (function (rxCancellable, Scheduler) {
   /**
    * @ignore
    */
+  const defaultScheduler = sched => (
+    isOf(sched, Scheduler.interface)
+      ? sched
+      : Scheduler.current
+  );
+
+  /**
+   * @ignore
+   */
   function subscribeActual(observer) {
     let err;
 
@@ -620,14 +629,10 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isNumber(amount)) {
       return source;
     }
-    let sched = scheduler;
-    if (!isOf(sched, Scheduler.interface)) {
-      sched = Scheduler.current;
-    }
     const single = new Single(subscribeActual$7);
     single.source = source;
     single.amount = amount;
-    single.scheduler = sched;
+    single.scheduler = defaultScheduler(scheduler);
     single.doDelayError = doDelayError;
     return single;
   };
@@ -663,14 +668,10 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isNumber(amount)) {
       return source;
     }
-    let sched = scheduler;
-    if (!isOf(sched, Scheduler.interface)) {
-      sched = Scheduler.current;
-    }
     const single = new Single(subscribeActual$8);
     single.source = source;
     single.amount = amount;
-    single.scheduler = sched;
+    single.scheduler = defaultScheduler(scheduler);
     return single;
   };
 
@@ -1348,13 +1349,9 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var observeOn = (source, scheduler) => {
-    let sched = scheduler;
-    if (!isOf(sched, Scheduler.interface)) {
-      sched = Scheduler.current;
-    }
     const single = new Single(subscribeActual$r);
     single.source = source;
-    single.scheduler = sched;
+    single.scheduler = defaultScheduler(scheduler);
     return single;
   };
 
@@ -1508,7 +1505,7 @@ var Single = (function (rxCancellable, Scheduler) {
 
     const { source, bipredicate } = this;
 
-    let retries = 0;
+    let retries = -1;
 
     const sub = () => {
       retries += 1;
@@ -1572,13 +1569,9 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   var subscribeOn = (source, scheduler) => {
-    let sched = scheduler;
-    if (!isOf(sched, Scheduler.interface)) {
-      sched = Scheduler.current;
-    }
     const single = new Single(subscribeActual$w);
     single.source = source;
-    single.scheduler = sched;
+    single.scheduler = defaultScheduler(scheduler);
     return single;
   };
 
@@ -1651,14 +1644,9 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isNumber(amount)) {
       return error(new Error('Single.timer: "amount" is not a number.'));
     }
-
-    let sched = scheduler;
-    if (!isOf(sched, Scheduler.interface)) {
-      sched = Scheduler.current;
-    }
     const single = new Single(subscribeActual$y);
     single.amount = amount;
-    single.scheduler = sched;
+    single.scheduler = defaultScheduler(scheduler);
     return single;
   };
 
@@ -1699,14 +1687,10 @@ var Single = (function (rxCancellable, Scheduler) {
     if (!isNumber(amount)) {
       return source;
     }
-    let sched = scheduler;
-    if (!isOf(sched, Scheduler.interface)) {
-      sched = Scheduler.current;
-    }
     const single = new Single(subscribeActual$z);
     single.source = source;
     single.amount = amount;
-    single.scheduler = sched;
+    single.scheduler = defaultScheduler(scheduler);
     return single;
   };
 
