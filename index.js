@@ -1050,7 +1050,6 @@ function subscribeActual$j(observer) {
       controller.link(ac);
     },
     onSuccess(x) {
-      controller.unlink();
       let result;
       try {
         result = mapper(x);
@@ -1060,9 +1059,9 @@ function subscribeActual$j(observer) {
         }
       } catch (e) {
         onError(e);
-        controller.cancel();
         return;
       }
+      controller.unlink();
       result.subscribeWith({
         onSubscribe(ac) {
           controller.link(ac);
@@ -1372,7 +1371,6 @@ function subscribeActual$s(observer) {
     },
     onSuccess,
     onError(x) {
-      controller.unlink();
       let result;
 
       if (isFunction(resumeIfError)) {
@@ -1383,13 +1381,13 @@ function subscribeActual$s(observer) {
           }
         } catch (e) {
           onError(new Error([x, e]));
-          controller.cancel();
           return;
         }
       } else {
         result = resumeIfError;
       }
 
+      controller.unlink();
       result.subscribeWith({
         onSubscribe(ac) {
           controller.link(ac);
@@ -1525,7 +1523,6 @@ function subscribeActual$v(observer) {
             sub();
           } else {
             onError(x);
-            controller.cancel();
           }
         } else {
           sub();
