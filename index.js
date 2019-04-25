@@ -104,6 +104,15 @@ const immediateError = (o, x) => {
 /**
  * @ignore
  */
+const defaultScheduler = sched => (
+  isOf(sched, Scheduler.interface)
+    ? sched
+    : Scheduler.current
+);
+
+/**
+ * @ignore
+ */
 function subscribeActual(observer) {
   let err;
 
@@ -622,14 +631,10 @@ var delay = (source, amount, scheduler, doDelayError) => {
   if (!isNumber(amount)) {
     return source;
   }
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual$7);
   single.source = source;
   single.amount = amount;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   single.doDelayError = doDelayError;
   return single;
 };
@@ -665,14 +670,10 @@ var delaySubscription = (source, amount, scheduler) => {
   if (!isNumber(amount)) {
     return source;
   }
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual$8);
   single.source = source;
   single.amount = amount;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   return single;
 };
 
@@ -1350,13 +1351,9 @@ function subscribeActual$r(observer) {
  * @ignore
  */
 var observeOn = (source, scheduler) => {
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual$r);
   single.source = source;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   return single;
 };
 
@@ -1510,7 +1507,7 @@ function subscribeActual$v(observer) {
 
   const { source, bipredicate } = this;
 
-  let retries = 0;
+  let retries = -1;
 
   const sub = () => {
     retries += 1;
@@ -1574,13 +1571,9 @@ function subscribeActual$w(observer) {
  * @ignore
  */
 var subscribeOn = (source, scheduler) => {
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual$w);
   single.source = source;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   return single;
 };
 
@@ -1653,14 +1646,9 @@ var timer = (amount, scheduler) => {
   if (!isNumber(amount)) {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
-
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual$y);
   single.amount = amount;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   return single;
 };
 
@@ -1701,14 +1689,10 @@ var timeout = (source, amount, scheduler) => {
   if (!isNumber(amount)) {
     return source;
   }
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual$z);
   single.source = source;
   single.amount = amount;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   return single;
 };
 
