@@ -49,7 +49,7 @@ import {
   onErrorResumeNext, onErrorReturnItem, onErrorReturn,
   timeout, zipWith, doOnSubscribe, ambWith, amb,
   doOnTerminate, cache, delaySubscription, delayUntil,
-  merge, flatMap, retry, compose, lift, takeUntil, observeOn, subscribeOn, ambArray, zipArray,
+  merge, flatMap, retry, compose, lift, takeUntil, observeOn, subscribeOn, ambArray, zipArray, zip,
 } from './internal/operators';
 import { isObserver } from './internal/utils';
 
@@ -841,6 +841,23 @@ export default class Single {
    */
   timeout(amount, scheduler) {
     return timeout(this, amount, scheduler);
+  }
+
+  /**
+   * Waits until all Single sources provided by the Iterable sequence signal a
+   * success value and calls a zipper function with an array of these values to
+   * return a result to be emitted to downstream.
+   * @param {!Iterable} sources
+   * the Iterable sequence of SingleSource instances. An empty sequence
+   * will result in an onError signal.
+   * @param {?Function} zipper
+   * the function that receives an array with values
+   * from each Single and should return a value to be
+   * emitted to downstream
+   * @returns {Single}
+   */
+  static zip(sources, zipper) {
+    return zip(sources, zipper);
   }
 
   /**
