@@ -15,7 +15,7 @@ export default (sources, zipper) => {
 
   for (const source of sources) {
     if (is(source)) {
-      singles.push(sources);
+      singles.push(source);
     } else {
       return error(new Error('Observable.zip: one of the sources is not a Single.'));
     }
