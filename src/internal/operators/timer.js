@@ -1,6 +1,5 @@
-import Scheduler from 'rx-scheduler';
 import Single from '../../single';
-import { cleanObserver, isNumber, isOf } from '../utils';
+import { cleanObserver, isNumber, defaultScheduler } from '../utils';
 import error from './error';
 
 /**
@@ -17,13 +16,8 @@ export default (amount, scheduler) => {
   if (!isNumber(amount)) {
     return error(new Error('Single.timer: "amount" is not a number.'));
   }
-
-  let sched = scheduler;
-  if (!isOf(sched, Scheduler.interface)) {
-    sched = Scheduler.current;
-  }
   const single = new Single(subscribeActual);
   single.amount = amount;
-  single.scheduler = sched;
+  single.scheduler = defaultScheduler(scheduler);
   return single;
 };
