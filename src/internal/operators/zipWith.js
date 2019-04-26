@@ -3,9 +3,8 @@ import zipArray from './zipArray';
 /**
  * @ignore
  */
-export default (source, other, zipper) => {
-  if (!is(other)) {
-    return source;
-  }
-  return zipArray([source, other], zipper);
-};
+export default (source, other, zipper) => (
+  !is(other)
+    ? source
+    : zipArray([source, other], zipper)
+);
