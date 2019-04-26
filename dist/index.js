@@ -369,7 +369,7 @@ var Single = (function (rxCancellable, Scheduler) {
       /**
        * @ignore
        */
-      this.link = new rxCancellable.BooleanCancellable();
+      this.linked = new rxCancellable.BooleanCancellable();
     }
 
     /**
@@ -377,7 +377,7 @@ var Single = (function (rxCancellable, Scheduler) {
      * @returns {boolean}
      */
     get cancelled() {
-      return this.link.cancelled;
+      return this.linked.cancelled;
     }
 
     /**
@@ -385,7 +385,11 @@ var Single = (function (rxCancellable, Scheduler) {
      * @returns {boolean}
      */
     cancel() {
-      return this.link.cancel();
+      if (!this.cancelled) {
+        this.events.cancel.forEach(f => f.apply(this));
+        return this.linked.cancel();
+      }
+      return false;
     }
 
     /**
@@ -403,9 +407,9 @@ var Single = (function (rxCancellable, Scheduler) {
           this.cancel();
           return true;
         } else {
-          const { link } = this;
-          this.link = cancellable;
-          link.cancel();
+          const { linked } = this;
+          this.linked = cancellable;
+          linked.cancel();
           return true;
         }
       }
