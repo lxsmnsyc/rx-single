@@ -271,7 +271,7 @@ var Single = (function (rxCancellable, Scheduler) {
    * @ignore
    */
   function subscribeActual$3(observer) {
-    const { onSuccess, onError, onSubscribe } = cleanObserver(observer);
+    const cleaned = cleanObserver(observer);
 
     const {
       source, cached, observers, subscribed,
@@ -279,7 +279,7 @@ var Single = (function (rxCancellable, Scheduler) {
 
     if (!cached) {
       const index = observers.length;
-      observers[index] = observer;
+      observers[index] = cleaned;
 
       const controller = new rxCancellable.BooleanCancellable();
 
@@ -287,7 +287,7 @@ var Single = (function (rxCancellable, Scheduler) {
         observers.splice(index, 1);
       });
 
-      onSubscribe(controller);
+      cleaned.onSubscribe(controller);
 
       if (!subscribed) {
         source.subscribeWith({
@@ -321,14 +321,14 @@ var Single = (function (rxCancellable, Scheduler) {
       }
     } else {
       const controller = new rxCancellable.BooleanCancellable();
-      onSubscribe(controller);
+      cleaned.onSubscribe(controller);
 
       const { value, error } = this;
       if (exists(value)) {
-        onSuccess(value);
+        cleaned.onSuccess(value);
       }
       if (exists(error)) {
-        onError(error);
+        cleaned.onError(error);
       }
       controller.cancel();
     }
