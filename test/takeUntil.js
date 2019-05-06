@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import assert from 'assert';
+import Scheduler from 'rx-scheduler';
 import Single from '../src/single';
 
 /**
@@ -38,7 +39,7 @@ describe('#takeUntil', () => {
    *
    */
   it('should signal success if other Single has not emitted an error signal', (done) => {
-    const single = Single.just('Hello').takeUntil(Single.error(new Error('World')).delay(100));
+    const single = Single.just('Hello').takeUntil(Single.error(new Error('World')).delay(100, Scheduler.current, true));
 
     single.subscribe(
       x => (x === 'Hello' ? done() : done(false)),
