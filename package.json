@@ -61,6 +61,6 @@
   },
   "dependencies": {
     "rx-cancellable": "^0.3.2",
-    "rx-scheduler": "^0.2.7"
+    "rx-scheduler": "^0.2.8"
   }
 }
